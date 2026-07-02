@@ -1,14 +1,16 @@
 """Normalize images under content/ so Instagram accepts them.
 
-Instagram's API only accepts JPEG images, so anything else (.webp, .png) is
-converted. Images are padded onto a white canvas at the right shape:
+Instagram's API only accepts JPEG, so .webp/.png are converted. Any folder
+named post/posts (feed) or story/stories (stories), at any nesting depth and in
+any case, is processed:
 
-    content/dayN/posts/    -> 1080x1080 (square feed post)
-    content/dayN/stories/  -> 1080x1920 (9:16 story)
+    Feed  -> keep the photo's aspect ratio if Instagram allows it (0.8-1.91),
+             capped at 1080 on the long edge; only pad to a 1080x1080 white
+             square when the aspect is out of range.
+    Story -> fit onto a 1080x1920 white canvas (9:16).
 
-Videos (.mp4/.mov) and caption text files are left untouched. The step is
-idempotent: a JPEG already at the target size is skipped, so re-runs are
-no-ops until new files appear.
+Videos and caption text files are left untouched. Idempotent: a JPEG already
+within spec is skipped, so re-runs are no-ops until new files appear.
 """
 
 import re
@@ -21,13 +23,34 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR_NAME = "content"
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp"}
-POSTS_SIZE = (1080, 1080)
-STORIES_SIZE = (1080, 1920)
-DAY_RE = re.compile(r"(?i)^day(\d+)$")
+POST_RE = re.compile(r"(?i)^posts?$")
+STORY_RE = re.compile(r"(?i)^stor(?:y|ies)$")
+
+FEED_MAX = 1080
+FEED_MIN_AR = 0.8      # 4:5 portrait
+FEED_MAX_AR = 1.91     # 1.91:1 landscape
+STORY_SIZE = (1080, 1920)
+
+
+def _load_rgb(src: Path) -> Image.Image:
+    img = ImageOps.exif_transpose(Image.open(src))
+    if img.mode in ("RGBA", "LA", "P"):
+        img = img.convert("RGBA")
+        flat = Image.new("RGB", img.size, (255, 255, 255))
+        flat.paste(img, mask=img.getchannel("A"))
+        return flat
+    return img.convert("RGB")
+
+
+def _pad_onto(img: Image.Image, size: tuple[int, int]) -> Image.Image:
+    canvas = Image.new("RGB", size, (255, 255, 255))
+    scale = min(size[0] / img.width, size[1] / img.height)
+    w, h = max(1, round(img.width * scale)), max(1, round(img.height * scale))
+    canvas.paste(img.resize((w, h), Image.LANCZOS), ((size[0] - w) // 2, (size[1] - h) // 2))
+    return canvas
 
 
 def _target_path(src: Path) -> Path:
-    """Pick a .jpg path for the normalized file, avoiding collisions."""
     candidate = src.with_suffix(".jpg")
     if candidate == src or not candidate.exists():
         return candidate
@@ -39,41 +62,52 @@ def _target_path(src: Path) -> Path:
         i += 1
 
 
-def normalize_image(src: Path, size: tuple[int, int]) -> Path | None:
-    """Convert/pad one image to a JPEG of `size`. Returns the new path if the
-    file changed, or None if it was already correct."""
-    img = Image.open(src)
-    img = ImageOps.exif_transpose(img)
+def _feed_ok(src: Path, img: Image.Image) -> bool:
+    ar = img.width / img.height
+    return (
+        src.suffix.lower() in (".jpg", ".jpeg")
+        and max(img.width, img.height) <= FEED_MAX
+        and FEED_MIN_AR <= ar <= FEED_MAX_AR
+    )
 
-    if src.suffix.lower() in (".jpg", ".jpeg") and img.size == size:
-        return None
 
-    # Flatten transparency onto white, then pad-center onto the target canvas.
-    if img.mode in ("RGBA", "LA", "P"):
-        img = img.convert("RGBA")
-        flat = Image.new("RGB", img.size, (255, 255, 255))
-        flat.paste(img, mask=img.getchannel("A"))
-        img = flat
-    else:
-        img = img.convert("RGB")
+def normalize_image(src: Path, kind: str) -> Path | None:
+    """kind is 'feed' or 'story'. Returns the new path if changed, else None."""
+    img = _load_rgb(src)
 
-    canvas = Image.new("RGB", size, (255, 255, 255))
-    scale = min(size[0] / img.width, size[1] / img.height)
-    w, h = max(1, round(img.width * scale)), max(1, round(img.height * scale))
-    resized = img.resize((w, h), Image.LANCZOS)
-    canvas.paste(resized, ((size[0] - w) // 2, (size[1] - h) // 2))
+    if kind == "story":
+        if src.suffix.lower() in (".jpg", ".jpeg") and img.size == STORY_SIZE:
+            return None
+        out = _pad_onto(img, STORY_SIZE)
+    else:  # feed
+        if _feed_ok(src, img):
+            return None
+        ar = img.width / img.height
+        if FEED_MIN_AR <= ar <= FEED_MAX_AR:
+            scale = min(1.0, FEED_MAX / max(img.width, img.height))
+            out = img.resize(
+                (max(1, round(img.width * scale)), max(1, round(img.height * scale))),
+                Image.LANCZOS,
+            )
+        else:
+            out = _pad_onto(img, (FEED_MAX, FEED_MAX))
 
     dest = _target_path(src)
-    canvas.save(dest, "JPEG", quality=90)
+    out.save(dest, "JPEG", quality=90)
     if dest != src:
         src.unlink()
     return dest
 
 
+def folder_kind(name: str) -> str | None:
+    if POST_RE.match(name):
+        return "feed"
+    if STORY_RE.match(name):
+        return "story"
+    return None
+
+
 def prepare(root: Path | None = None) -> list[tuple[Path, Path]]:
-    """Normalize every image under any posts/ or stories/ folder in content/,
-    at any nesting depth (content/dayN/... or content/<campaign>/dayN/...).
-    Returns [(old, new), ...]."""
     root = root or PROJECT_ROOT
     content = root / CONTENT_DIR_NAME
     changed: list[tuple[Path, Path]] = []
@@ -83,20 +117,14 @@ def prepare(root: Path | None = None) -> list[tuple[Path, Path]]:
     for folder in content.rglob("*"):
         if not folder.is_dir():
             continue
-        kind = folder.name.lower()
-        if kind == "posts":
-            size = POSTS_SIZE
-        elif kind == "stories":
-            size = STORIES_SIZE
-        else:
+        kind = folder_kind(folder.name)
+        if kind is None:
             continue
         for f in sorted(folder.iterdir()):
-            if not f.is_file() or f.name.startswith("."):
-                continue
-            if f.suffix.lower() not in IMAGE_EXTS:
+            if not f.is_file() or f.name.startswith(".") or f.suffix.lower() not in IMAGE_EXTS:
                 continue
             try:
-                dest = normalize_image(f, size)
+                dest = normalize_image(f, kind)
             except Exception as exc:  # corrupt/unreadable image
                 print(f"[warn] could not normalize {f}: {exc}", file=sys.stderr)
                 continue

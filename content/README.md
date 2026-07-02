@@ -5,33 +5,42 @@ automatically. No dashboard uploading needed.
 
 ## Structure
 
-Each **campaign** is a named folder with its own start date. Add as many as you
-like:
+Each **campaign** is a named folder with its own start date. A **day** is any
+folder that contains a `Post`/`Story` (or `posts`/`stories`) subfolder — at any
+nesting depth. The naming is flexible and case-insensitive, so all of these
+layouts work:
 
 ```
 content/
-  William Collins Ghost 1/     <- a campaign (its own start date)
-    day1/
-      posts/      -> feed posts on the start date
-      stories/    -> stories on the start date
-    day2/
+  William Collins Ghost 1/           <- a campaign (its own start date)
+    Month 1/
+      Day 1/
+        Post/     -> feed posts on the start date
+        Story/    -> stories on the start date
+      Day 2/
+        Post/
+        Story/
+  Simple Campaign/                   <- no month layer? also fine
+    Day 1/
       posts/
       stories/
-  Another Campaign/            <- add more campaigns any time
-    day1/
-      ...
+  Another Campaign/
+    posts/                           <- no day layer? treated as a single day
+    stories/
 ```
 
+- Day folders are ordered **naturally** ("Day 2" before "Day 10", "Month 1"
+  before "Month 2") and each gets the **next consecutive date** from the
+  campaign's start date: the first day posts on the start date, the next the
+  following day, and so on. Ordering is by position, so `Month 2/Day 1`
+  continues after `Month 1/Day 20` automatically.
 - Set each campaign's **start date** and daily times in the dashboard under
-  *Content campaigns* (stored in `data/campaigns.json`). day1 posts on that
-  campaign's start date, day2 the next day, and so on.
-- A campaign with no dayN folders but `posts/`/`stories/` directly is treated
-  as day1.
+  *Content campaigns* (stored in `data/campaigns.json`).
 - Day folders placed directly under `content/` (`content/day1/...`) form a
   default unnamed campaign, for backwards compatibility.
-- **posts/** files become feed posts (videos become Reels).
-- **stories/** files become stories (captions are ignored — Instagram does not
-  support them on stories).
+- `Post`/`posts` files become feed posts (videos become Reels).
+- `Story`/`stories` files become stories (captions are ignored — Instagram does
+  not support them on stories).
 
 ## Timing
 
@@ -43,9 +52,11 @@ apart**.
 
 ## File formats
 
-- Images: `.jpg`, `.png`, `.webp` — anything that is not already a correctly
-  sized JPEG is converted automatically (feed 1080x1080, story 1080x1920,
-  padded onto white).
+- Images: `.jpg`, `.png`, `.webp` — converted to JPEG automatically. Feed
+  photos **keep their aspect ratio** when Instagram allows it (between 4:5
+  portrait and 1.91:1 landscape), capped at 1080px on the long edge; only
+  out-of-range shapes are padded onto a 1080x1080 white square. Stories are
+  fitted onto a 1080x1920 white canvas.
 - Videos: `.mp4`, `.mov` (keep them under ~40 MB).
 
 ## Captions (feed posts only)

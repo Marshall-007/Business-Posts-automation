@@ -83,15 +83,38 @@ def test_three_stories_four_hours_apart_no_caption(tmp_path, ig_env, business_co
     assert all(it["post_type"] == "story" and it["caption"] == "" for it in added)
 
 
-def test_day2_maps_to_next_date(tmp_path, ig_env, business_config):
+def test_days_map_to_consecutive_dates_in_natural_order(tmp_path, ig_env, business_config):
+    # Days are ordered naturally (Day 2 before Day 10) and assigned consecutive
+    # dates from the start date by position -- not by any number in the name.
     qp = write_campaigns(tmp_path, {"Camp": CFG})
-    write(tmp_path / "content/Camp/day2/posts/reel.mp4")
-    write(tmp_path / "content/Camp/day2/posts/reel.txt", "Reel cap")
+    write(tmp_path / "content/Camp/Day 1/posts/a.jpg")
+    write(tmp_path / "content/Camp/Day 2/posts/reel.mp4")
+    write(tmp_path / "content/Camp/Day 2/posts/reel.txt", "Reel cap")
+    write(tmp_path / "content/Camp/Day 10/posts/c.jpg")
 
     added = run(tmp_path, qp, business_config)
-    assert added[0]["scheduled_at"] == "2026-07-11T07:00:00+00:00"
-    assert added[0]["is_video"] is True
-    assert added[0]["caption"] == "Reel cap"
+    by_path = {it["media_path"].split("/")[-2] + "/" + it["media_path"].split("/")[-1]: it
+               for it in added}
+    assert by_path["posts/a.jpg"]["scheduled_at"].startswith("2026-07-10")   # Day 1
+    reel = by_path["posts/reel.mp4"]
+    assert reel["scheduled_at"].startswith("2026-07-11")                     # Day 2
+    assert reel["is_video"] is True and reel["caption"] == "Reel cap"
+    assert by_path["posts/c.jpg"]["scheduled_at"].startswith("2026-07-12")   # Day 10 (3rd)
+
+
+def test_nested_month_day_post_story(tmp_path, ig_env, business_config):
+    # The user's real layout: content/<Campaign>/Month 1/Day N/Post|Story.
+    qp = write_campaigns(tmp_path, {"WC": CFG})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+    write(tmp_path / "content/WC/Month 1/Day 1/Story/s.jpg")
+    write(tmp_path / "content/WC/Month 1/Day 2/Post/b.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    by_kind_date = {(it["post_type"], it["media_path"].split("/")[-1]): it["scheduled_at"]
+                    for it in added}
+    assert by_kind_date[("feed", "a.jpg")].startswith("2026-07-10")
+    assert by_kind_date[("story", "s.jpg")].startswith("2026-07-10")
+    assert by_kind_date[("feed", "b.jpg")].startswith("2026-07-11")
 
 
 def test_multiple_campaigns_each_own_start_date(tmp_path, ig_env, business_config):

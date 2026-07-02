@@ -2,16 +2,20 @@
 
 A *campaign* is a named folder under content/ (e.g. "William Collins Ghost 1").
 Each campaign has its own start date, set in the dashboard and stored in
-data/campaigns.json. Inside a campaign, day folders drive the schedule:
+data/campaigns.json.
 
-    content/<Campaign>/day1/posts/     -> feed posts on the start date
-    content/<Campaign>/day1/stories/   -> stories on the start date
-    content/<Campaign>/day2/...        -> the next day, and so on
+A *day* is any folder that directly contains a Post/Posts or Story/Stories
+subfolder, at any nesting depth. This means every layout works:
 
-A campaign with no dayN folders but posts/stories directly is treated as day1.
-For backwards compatibility, day folders placed directly under content/
-(content/dayN/...) form the default campaign, keyed "" in campaigns.json (or
-the legacy data/campaign.json).
+    content/<Campaign>/Day 1/Post/            -> feed posts
+    content/<Campaign>/Day 1/Story/           -> stories
+    content/<Campaign>/Month 1/Day 1/Post/    -> nested months are fine too
+    content/day1/posts/                        -> the default campaign ("")
+
+Day folders are ordered by a natural sort of their path ("Day 2" before
+"Day 10", "Month 1" before "Month 2") and each is assigned a consecutive
+calendar date starting from the campaign's start date -- the first day in
+order posts on the start date, the next on the following day, and so on.
 
 Multiple files in one folder are spread across the day: the first at the
 folder's start time, the rest at an interval of 12h / file-count, clamped
@@ -27,12 +31,14 @@ JPEG/MP4/MOV files are enqueued. A path is never enqueued twice.
 import json
 import re
 import sys
+from collections import defaultdict
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
 from . import content_generator
 from .config import Credentials, load_business_config
+from .content_prepare import folder_kind
 from .queue_runner import QUEUE_FILE, load_queue, save_queue
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -40,19 +46,21 @@ CONTENT_DIR_NAME = "content"
 CAMPAIGNS_FILE_NAME = "campaigns.json"
 LEGACY_CAMPAIGN_FILE_NAME = "campaign.json"
 
-DAY_RE = re.compile(r"(?i)^day(\d+)$")
 IMAGE_EXTS = {".jpg", ".jpeg"}
 VIDEO_EXTS = {".mp4", ".mov"}
+
+# A top-level content/dayN folder belongs to the default campaign ("").
+DAY_RE = re.compile(r"(?i)^day\s*\d+$")
 
 DAY_SPAN_MINUTES = 720
 MIN_INTERVAL_MINUTES = 180
 MAX_INTERVAL_MINUTES = 360
 
-KINDS = (
-    # (folder name, campaign time key, default UTC time, post_type)
-    ("posts", "posts_time_utc", "07:00", "feed"),
-    ("stories", "stories_time_utc", "10:00", "story"),
-)
+# (post_type, campaign time key, default UTC time)
+KIND_SETTINGS = {
+    "feed": ("posts_time_utc", "07:00"),
+    "story": ("stories_time_utc", "10:00"),
+}
 
 DEFAULTS = {
     "enabled": False,
@@ -119,7 +127,7 @@ def raw_base_url(root: Path) -> str:
 
 def media_files(folder: Path) -> list[Path]:
     files = []
-    for f in sorted(folder.iterdir()):
+    for f in sorted(folder.iterdir(), key=lambda p: natural_key(p.name)):
         if not f.is_file() or f.name.startswith("."):
             continue
         if f.suffix.lower() in IMAGE_EXTS | VIDEO_EXTS:
@@ -127,26 +135,49 @@ def media_files(folder: Path) -> list[Path]:
     return files
 
 
-def find_subdir(parent: Path, name: str) -> Path | None:
-    for sub in parent.iterdir():
-        if sub.is_dir() and sub.name.lower() == name:
-            return sub
-    return None
+def natural_key(text: str) -> list:
+    """Split into text/number tokens so 'Day 2' sorts before 'Day 10'."""
+    return [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", text)]
 
 
-def campaign_days(campaign_dir: Path) -> list[tuple[int, Path]]:
-    """Return [(day_number, day_dir)]. A campaign with no dayN folders but
-    posts/stories directly is treated as a single day1."""
-    days = []
-    for d in campaign_dir.iterdir():
-        m = DAY_RE.match(d.name) if d.is_dir() else None
-        if m:
-            days.append((int(m.group(1)), d))
-    if days:
-        return sorted(days)
-    if find_subdir(campaign_dir, "posts") or find_subdir(campaign_dir, "stories"):
-        return [(1, campaign_dir)]
-    return []
+def find_day_dirs(content_dir: Path) -> dict[str, list[Path]]:
+    """Group day folders by campaign.
+
+    A day folder is any directory that directly contains a Post/Story subfolder.
+    The campaign is the first path component under content/; a day folder that is
+    itself a direct child of content/ belongs to the default campaign ("").
+    """
+    by_campaign: dict[str, set] = defaultdict(set)
+    for sub in content_dir.rglob("*"):
+        if sub.is_dir() and folder_kind(sub.name) is not None:
+            day_dir = sub.parent
+            rel = day_dir.relative_to(content_dir).parts
+            # A direct content/dayN child is the default campaign (""); any other
+            # top-level folder is a named campaign, even if it holds posts/stories
+            # directly (then the campaign folder itself is its single day).
+            if len(rel) == 1 and DAY_RE.match(rel[0]):
+                name = ""
+            else:
+                name = rel[0]
+            by_campaign[name].add(day_dir)
+    return {
+        name: sorted(dirs, key=lambda d: natural_key(str(d.relative_to(content_dir))))
+        for name, dirs in by_campaign.items()
+    }
+
+
+def day_subfolders(day_dir: Path) -> list[tuple[str, Path]]:
+    """Return [(post_type, folder)] for the Post/Story folders inside a day."""
+    found = []
+    for child in sorted(day_dir.iterdir(), key=lambda p: natural_key(p.name)):
+        if not child.is_dir():
+            continue
+        kind = folder_kind(child.name)
+        if kind == "feed":
+            found.append(("feed", child))
+        elif kind == "story":
+            found.append(("story", child))
+    return found
 
 
 def slug(name: str) -> str:
@@ -167,8 +198,8 @@ def resolve_caption(media, folder, business_config, api_key, cache) -> str:
 
 
 def _enqueue_folder(
-    folder, post_type, time_key, default_time, campaign_dir, campaign_name,
-    day_date, config, items, known_paths, root, base_url, business_config, creds, cache,
+    folder, post_type, campaign_name, day_slug, day_date, config,
+    items, known_paths, root, base_url, business_config, creds, cache,
 ):
     files = media_files(folder)
     rel_folder = str(folder.relative_to(root))
@@ -176,6 +207,7 @@ def _enqueue_folder(
     if not new_files:
         return []
 
+    time_key, default_time = KIND_SETTINGS[post_type]
     existing = [
         it for it in items
         if (it.get("media_path") or "").startswith(rel_folder + "/")
@@ -200,8 +232,7 @@ def _enqueue_folder(
         if post_type == "feed":
             caption = resolve_caption(media, folder, business_config, creds.anthropic_api_key, cache)
         item = {
-            "id": f"content_{slug(campaign_name)}_{campaign_dir.name.lower()}"
-                  f"_{post_type}_{media.stem}",
+            "id": f"content_{slug(campaign_name)}_{day_slug}_{post_type}_{slug(media.stem)}",
             "source": "content",
             "campaign": campaign_name,
             "media_path": rel,
@@ -241,18 +272,11 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
     items = data.get("items", [])
     known_paths = {it.get("media_path") for it in items if it.get("media_path")}
 
-    # Enumerate campaigns: the default "" (content/dayN) plus each named folder.
-    campaigns: list[tuple[str, Path]] = []
-    if campaign_days(content_dir):
-        campaigns.append(("", content_dir))
-    for d in sorted(content_dir.iterdir()):
-        if d.is_dir() and not DAY_RE.match(d.name) and d.name.lower() not in ("posts", "stories"):
-            campaigns.append((d.name, d))
-
+    campaigns = find_day_dirs(content_dir)
     cache: dict = {}
     added: list[dict] = []
 
-    for name, campaign_dir in campaigns:
+    for name, day_dirs in campaigns.items():
         config = {**DEFAULTS, **configs.get(name, {})}
         if not config.get("enabled"):
             continue
@@ -263,15 +287,13 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
                   file=sys.stderr)
             continue
 
-        for day_n, day_dir in campaign_days(campaign_dir):
-            day_date = start + timedelta(days=day_n - 1)
-            for kind, time_key, default_time, post_type in KINDS:
-                folder = find_subdir(day_dir, kind)
-                if folder is None:
-                    continue
+        for index, day_dir in enumerate(day_dirs):
+            day_date = start + timedelta(days=index)
+            day_slug = slug(str(day_dir.relative_to(content_dir / name if name else content_dir)))
+            for post_type, folder in day_subfolders(day_dir):
                 added += _enqueue_folder(
-                    folder, post_type, time_key, default_time, day_dir, name,
-                    day_date, config, items, known_paths, root, base_url,
+                    folder, post_type, name, day_slug, day_date, config,
+                    items, known_paths, root, base_url,
                     business_config, creds, cache,
                 )
 

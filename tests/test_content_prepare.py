@@ -13,7 +13,9 @@ def make_image(path: Path, size, mode="RGB", fmt=None):
     Image.new(mode, size, color).save(path, fmt or path.suffix.lstrip(".").upper().replace("JPG", "JPEG"))
 
 
-def test_webp_post_becomes_square_jpeg(tmp_path):
+def test_webp_post_keeps_aspect_ratio_as_jpeg(tmp_path):
+    # A feed image within Instagram's allowed aspect range (0.8-1.91) keeps its
+    # shape; it is only converted to JPEG (and capped at 1080 on the long edge).
     src = tmp_path / "content/day1/posts/photo.webp"
     make_image(src, (800, 600), fmt="WEBP")
 
@@ -22,6 +24,27 @@ def test_webp_post_becomes_square_jpeg(tmp_path):
     out = tmp_path / "content/day1/posts/photo.jpg"
     assert [(a.name, b.name) for a, b in changed] == [("photo.webp", "photo.jpg")]
     assert not src.exists()
+    assert Image.open(out).size == (800, 600)
+
+
+def test_out_of_range_feed_image_is_padded_to_square(tmp_path):
+    # A too-wide panorama (aspect > 1.91) is padded onto a 1080x1080 white square.
+    src = tmp_path / "content/day1/posts/pano.webp"
+    make_image(src, (2000, 500), fmt="WEBP")
+
+    prepare(tmp_path)
+
+    out = tmp_path / "content/day1/posts/pano.jpg"
+    assert Image.open(out).size == (1080, 1080)
+
+
+def test_large_in_range_feed_image_is_capped_to_1080(tmp_path):
+    src = tmp_path / "content/day1/posts/big.webp"
+    make_image(src, (2160, 2160), fmt="WEBP")
+
+    prepare(tmp_path)
+
+    out = tmp_path / "content/day1/posts/big.jpg"
     assert Image.open(out).size == (1080, 1080)
 
 

@@ -812,55 +812,63 @@ function saveConfig(message) {
   }).then(function (r) { configState.sha = r.content.sha; });
 }
 
-// List campaign folders and their day folders with media counts.
+// Classify a folder name the same way the Python engine does.
+function folderKindJS(name) {
+  if (/^posts?$/i.test(name)) return "feed";
+  if (/^stor(y|ies)$/i.test(name)) return "story";
+  return null;
+}
+function isTopDayName(name) { return /^day\s*\d+$/i.test(name); }
+
+// Natural sort key so "Day 2" sorts before "Day 10", "Month 1" before "Month 2".
+function naturalKey(text) {
+  return String(text).toLowerCase().split(/(\d+)/).map(function (t) {
+    return /^\d+$/.test(t) ? t.padStart(12, "0") : t;
+  }).join("");
+}
+
+// Discover every campaign and its day folders from one recursive tree read.
+// A day is any folder that directly contains a Post/Story folder, at any depth,
+// exactly matching src/content_sync.py's find_day_dirs.
 function loadCampaigns() {
   var s = settings();
   status("content-status", "info", "Loading campaigns...");
-  return api("/repos/" + s.owner + "/" + s.repo + "/contents/content?ref=" +
-      encodeURIComponent(s.branch)).then(function (entries) {
-    var dirs = (entries || []).filter(function (e) {
-      return e.type === "dir" && !/^day\d+$/i.test(e.name) &&
-        e.name.toLowerCase() !== "posts" && e.name.toLowerCase() !== "stories";
+  return api("/repos/" + s.owner + "/" + s.repo + "/git/trees/" +
+      encodeURIComponent(s.branch) + "?recursive=1").then(function (res) {
+    var camps = {};  // name -> { name, path, days: { dayRel -> {label, posts, stories} } }
+    (res.tree || []).forEach(function (node) {
+      if (node.type !== "blob") return;
+      var parts = node.path.split("/");
+      if (parts[0] !== "content" || parts.length < 4) return;
+      var file = parts[parts.length - 1];
+      var kind = folderKindJS(parts[parts.length - 2]);
+      if (!kind || !isMediaName(file)) return;
+      var dayParts = parts.slice(1, parts.length - 2);  // under content/, minus post-folder+file
+      if (!dayParts.length) return;
+      var name = (dayParts.length === 1 && isTopDayName(dayParts[0])) ? "" : dayParts[0];
+      var dayRel = dayParts.join("/");
+      var label = name ? (dayParts.slice(1).join("/") || dayParts[0]) : dayRel;
+      if (!camps[name]) {
+        camps[name] = { name: name, path: name ? "content/" + name : "content", days: {} };
+      }
+      var days = camps[name].days;
+      if (!days[dayRel]) days[dayRel] = { label: label, rel: dayRel, posts: 0, stories: 0 };
+      if (kind === "feed") days[dayRel].posts++; else days[dayRel].stories++;
     });
-    return Promise.all(dirs.map(function (dir) { return loadOneCampaign(dir.path, dir.name); }));
-  }).then(function (list) {
-    campaignsData = list.sort(function (a, b) { return a.name.localeCompare(b.name); });
+    campaignsData = Object.keys(camps).map(function (name) {
+      var c = camps[name];
+      var days = Object.keys(c.days).map(function (k) { return c.days[k]; })
+        .sort(function (a, b) { return naturalKey(a.rel) < naturalKey(b.rel) ? -1 : 1; })
+        .map(function (d, i) { return { n: i + 1, name: d.label, posts: d.posts, stories: d.stories }; });
+      return { name: c.name, path: c.path, days: days };
+    }).sort(function (a, b) { return a.name.localeCompare(b.name); });
     el("content-status").className = "status";
     renderCampaigns();
   }).catch(function (e) {
     campaignsData = [];
     renderCampaigns();
     status("content-status", "err",
-      "No content folder yet (" + e.message + "). Create a campaign below.");
-  });
-}
-
-function loadOneCampaign(path, name) {
-  var s = settings();
-  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" +
-      path.split("/").map(encodeURIComponent).join("/") + "?ref=" +
-      encodeURIComponent(s.branch)).then(function (entries) {
-    var dayDirs = (entries || []).filter(function (e) {
-      return e.type === "dir" && /^day\d+$/i.test(e.name);
-    });
-    return Promise.all(dayDirs.map(function (d) {
-      function count(kind) {
-        return api("/repos/" + s.owner + "/" + s.repo + "/contents/" +
-            (d.path + "/" + kind).split("/").map(encodeURIComponent).join("/") +
-            "?ref=" + encodeURIComponent(s.branch))
-          .then(function (files) {
-            return (files || []).filter(function (f) {
-              return f.type === "file" && isMediaName(f.name);
-            }).length;
-          }).catch(function () { return 0; });
-      }
-      return Promise.all([count("posts"), count("stories")]).then(function (c) {
-        return { n: parseInt(d.name.replace(/\D/g, ""), 10), name: d.name,
-                 posts: c[0], stories: c[1] };
-      });
-    })).then(function (days) {
-      return { name: name, path: path, days: days.sort(function (a, b) { return a.n - b.n; }) };
-    });
+      "Could not read content tree (" + e.message + "). Create a campaign below.");
   });
 }
 

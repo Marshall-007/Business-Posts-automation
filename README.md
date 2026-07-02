@@ -55,21 +55,26 @@ can fetch the images.
 
 **Content campaigns (hands-free posting)** — instead of uploading through the UI,
 create named campaign folders (each with its own start date) and drop
-images/videos in; they post themselves:
+images/videos in; they post themselves. A **day** is any folder containing a
+`Post`/`Story` subfolder, at any depth and in any case, so your existing folder
+tree works as-is:
 
 ```
-content/William Collins Ghost 1/day1/posts/     -> feed posts on the campaign start date
-content/William Collins Ghost 1/day1/stories/   -> stories on the start date
-content/William Collins Ghost 1/day2/...         -> the next day, and so on
-content/Another Campaign/day1/...                -> add as many campaigns as you like
+content/William Collins Ghost 1/Month 1/Day 1/Post/    -> feed posts on the campaign start date
+content/William Collins Ghost 1/Month 1/Day 1/Story/   -> stories on the start date
+content/William Collins Ghost 1/Month 1/Day 2/...       -> the next day, and so on
+content/Another Campaign/Day 1/posts/                   -> add as many campaigns as you like
 ```
 
-Add campaigns and set each one's start date and daily times in the dashboard's
+Day folders are ordered naturally ("Day 2" before "Day 10", "Month 1" before
+"Month 2") and assigned consecutive dates from the campaign's start date. Add
+campaigns and set each one's start date and daily times in the dashboard's
 *Content campaigns* section (stored in `data/campaigns.json`), and enable each.
 Multiple files in one folder
 spread across the day automatically: 2 files post 6h apart, 3 files 4h apart,
 4+ files 3h apart. Images are converted to JPEG and sized automatically
-(`.webp`/`.png` are fine; feed 1080x1080, story 1080x1920). Captions come from a
+(`.webp`/`.png` are fine; feed keeps its aspect ratio within Instagram's limits,
+story 1080x1920). Captions come from a
 matching `photo1.txt`, a folder `caption.txt`, or are auto-generated. Every
 15 minutes the scheduler (`scheduler.yml`) converts new images, queues them
 (visible/cancellable in the dashboard Queue), posts what is due, and deletes
