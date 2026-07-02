@@ -1,37 +1,55 @@
 # Business profile used to generate posts. Edit everything in this file.
 
 business:
-  name: "My Business"
+  name: "Gwalava Boards and Furniture Fittings"
   description: >
-    A short description of what the business does, who it serves,
-    and what makes it different.
-  website: "https://example.com"
+    A furniture boards and fittings specialist with 25 years of experience.
+    We supply colour boards, gloss boards and precision tops, top-quality
+    hardware accessories, and offer precision cutting and edge banding
+    (0.4mm, 1mm and 2mm) — every project completed with precision and expertise.
+  website: ""
   tone: "friendly, professional, confident"
-  audience: "small business owners and entrepreneurs"
-  call_to_action: "Visit our website or send us a message to learn more."
+  audience: "furniture makers, carpenters, contractors and homeowners"
+  call_to_action: "Visit us or send us a message to learn more."
 
 # Topics the generator rotates through (recently used ones are avoided).
 topics:
-  - "a customer success story or testimonial theme"
-  - "a practical tip related to our industry"
-  - "behind the scenes of how we work"
-  - "a common myth in our industry, debunked"
-  - "why quality matters more than price"
-  - "a seasonal or timely promotion"
-  - "frequently asked question and its answer"
-  - "what makes our service different"
+  - "expertise in colour boards and gloss boards for a stylish finish"
+  - "precision cutting and edge banding (0.4mm, 1mm and 2mm)"
+  - "top-quality hardware accessories that last"
+  - "25 years of experience and what it means for your project"
+  - "precision tops made for every project"
+  - "why quality boards and fittings save you money long term"
+  - "a common furniture-fittings question, answered"
 
 # Default hashtags appended where the platform benefits from them.
 hashtags:
-  - "#smallbusiness"
-  - "#business"
+  - "#furniture"
+  - "#furnituredesign"
+  - "#carpentry"
+  - "#interiordesign"
+  - "#gwalavaboards"
 
 # Public image URLs, required for Instagram posts (rotated in order).
-image_urls: []
-  # - "https://example.com/images/post1.jpg"
+# These are the branded graphics generated into assets/ and served from the
+# GitHub repo. They resolve ONLY if the repository is public (see SETUP.md).
+image_urls:
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-01.png"
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-02.png"
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-03.png"
 
 # Used when no ANTHROPIC_API_KEY is configured (rotated in order).
 template_posts:
-  - "Quality isn't expensive — it's priceless. That's why we never cut corners. Get in touch to see the difference."
-  - "Behind every great business is a team that cares. Ours shows up for you every single day."
-  - "Got questions? We've got answers. Send us a message and we'll help you find exactly what you need."
+  - >
+    25 years of getting it right. At Gwalava Boards and Furniture Fittings we
+    supply colour boards, gloss boards and precision tops — with the hardware
+    to match. Whatever you're building, we help you finish it beautifully.
+    Visit us or send a message to learn more.
+  - >
+    Precision cutting and edge banding in 0.4mm, 1mm and 2mm — clean, accurate,
+    and finished to a professional standard every time. Bring us your project
+    and we'll get it board-ready. Send us a message to learn more.
+  - >
+    A great finish starts with great fittings. From durable hinges and runners
+    to top-quality handles and accessories, Gwalava Boards and Furniture
+    Fittings has everything your project needs. Visit us or send a message.
