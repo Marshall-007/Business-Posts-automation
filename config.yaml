@@ -31,20 +31,11 @@ hashtags:
   - "#gwalavaboards"
 
 # Public image URLs, required for Instagram posts (rotated in order).
-#
-# TEMPORARY placeholders — generic hosted images that always load, so the first
-# post works regardless of repo visibility. Lorem Picsum returns a real photo
-# for any seed. Swap these for your own product photos when you have them, or
-# for the on-brand graphics in assets/ (uncomment below) once the repo is Public.
+# Branded Gwalava graphics (JPEG) served from the public repo, SHA-pinned.
 image_urls:
-  - "https://picsum.photos/seed/gwalava1/1080/1080"
-  - "https://picsum.photos/seed/gwalava2/1080/1080"
-  - "https://picsum.photos/seed/gwalava3/1080/1080"
-
-# On-brand graphics (recommended). Use these instead once the repo is Public:
-#   - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-01.png"
-#   - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-02.png"
-#   - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/0690dc7f09ad583dc86ccb0066898d439d8c1405/assets/gwalava-03.png"
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/d81d8412bbddf7dfa316420d5fd1aace7bcf263a/assets/gwalava-01.jpg"
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/d81d8412bbddf7dfa316420d5fd1aace7bcf263a/assets/gwalava-02.jpg"
+  - "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/d81d8412bbddf7dfa316420d5fd1aace7bcf263a/assets/gwalava-03.jpg"
 
 # Used when no ANTHROPIC_API_KEY is configured (rotated in order).
 template_posts:
