@@ -1,7 +1,12 @@
-name: Scheduled Instagram queue
+name: Scheduled Instagram publisher
 
-# Posts images from data/queue.json when their scheduled time arrives, then
-# removes each posted image from the repo. Runs every 15 minutes.
+# Every 15 minutes:
+#   1. Normalize content/ images (.webp/.png -> correctly sized JPEG) and push,
+#      so Instagram can fetch them from raw.githubusercontent.com.
+#   2. Enqueue any new content/dayN files into data/queue.json (content_sync),
+#      spreading multiple files across the day.
+#   3. Post every due queue item (dashboard uploads and folder content alike),
+#      then delete the posted media from the repo.
 # Note: GitHub cron can be delayed several minutes under load, so posts go out
 # at or shortly after the chosen time.
 
@@ -30,20 +35,38 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - name: Post any due items
+      - name: Normalize content images
+        run: python -m src.content_prepare
+
+      - name: Push normalized images
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A content
+          if ! git diff --cached --quiet; then
+            git commit -m "Normalize content media [skip ci]"
+            git pull --rebase origin "$GITHUB_REF_NAME" || true
+            git push
+          fi
+
+      - name: Enqueue content folders and post due items
         env:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
           INSTAGRAM_APP_SECRET: ${{ secrets.INSTAGRAM_APP_SECRET }}
-        run: python -m src.queue_runner
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python -m src.content_sync
+          python -m src.queue_runner
 
-      - name: Commit queue changes and removed images
+      - name: Commit queue changes and removed media
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data/queue.json docs/uploads
+          git add -A data docs/uploads content
           if ! git diff --cached --quiet; then
             git commit -m "Process Instagram queue [skip ci]"
+            git pull --rebase origin "$GITHUB_REF_NAME" || true
             git push
           fi

@@ -151,6 +151,47 @@
     <div id="queue-status" class="status"></div>
   </section>
 
+  <section id="content">
+    <h2>Content folders (hands-free posting)</h2>
+    <p class="note">Drop images or videos into folders in the repo and they post
+      automatically, no uploading through this page. Structure:
+      content/day1/posts and content/day1/stories, then day2, day3, and so on.
+      day1 posts on the start date below. If a folder holds 2 files they go out
+      6 hours apart; 3 files, 4 hours apart (the first at the start time).
+      Images are converted and sized automatically (.webp and .png are fine).
+      Captions: add photo1.txt next to photo1.jpg, or one caption.txt for the
+      folder; otherwise a caption is written for you. Files are removed after
+      posting. Queued items appear in the Queue above, where they can be
+      cancelled.</p>
+    <div class="row">
+      <div>
+        <label for="c-start">Campaign start date (= day1)</label>
+        <input id="c-start" type="date">
+      </div>
+      <div>
+        <label for="c-posts-time">Feed posts start (your local time)</label>
+        <input id="c-posts-time" type="time">
+      </div>
+      <div>
+        <label for="c-stories-time">Stories start (your local time)</label>
+        <input id="c-stories-time" type="time">
+      </div>
+    </div>
+    <div class="checks" style="margin-top:12px;">
+      <label><input type="checkbox" id="c-enabled">Enabled (nothing posts from folders until this is on)</label>
+    </div>
+    <div class="btnrow">
+      <button id="save-campaign">Save settings</button>
+      <button id="reload-content" class="ghost">Reload plan</button>
+      <button id="new-day" class="ghost">Create next day folder</button>
+      <button id="run-content" class="ghost">Sync and post now</button>
+    </div>
+    <p class="note"><a id="content-gh-link" href="#" target="_blank" rel="noopener">Open the content folders on GitHub</a>
+      to add files (open a day folder, then Add file, then Upload files).</p>
+    <div id="content-plan"></div>
+    <div id="content-status" class="status"></div>
+  </section>
+
   <section id="flows">
     <h2>Flows</h2>
     <div id="flow-list"></div>
@@ -647,7 +688,7 @@ function renderQueue() {
     var cls = it.status === "posted" ? "ok" : (it.status === "error" ? "err" : "run");
     var cap = it.caption ? esc(it.caption.slice(0, 70)) : "(no caption)";
     var type = (it.post_type === "story") ? "story" : (it.is_video ? "reel" : "image");
-    var cancel = it.status === "pending"
+    var cancel = (it.status === "pending" || it.status === "error")
       ? "<button class='danger' data-cancel='" + esc(it.id) + "'>Cancel</button>" : "";
     return "<tr><td>" + esc(type) + "</td><td>" + cap + "</td><td>" + esc(when) + "</td>" +
       "<td><span class='pill " + cls + "'>" + esc(it.status) + "</span></td>" +
@@ -698,13 +739,207 @@ el("run-queue").onclick = function () {
   }).catch(function (e) { status("queue-status", "err", "Failed: " + e.message); });
 };
 
+// ---- Content folders (campaign) ----
+var CAMPAIGN_PATH = "data/campaign.json";
+var SCHEDULER_FILE = "scheduler.yml";
+var campaignState = { data: null, sha: null };
+var contentDays = []; // [{n, name, posts, stories}]
+
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+
+function utcToLocal(dateStr, hhmm) {
+  var d = new Date((dateStr || new Date().toISOString().slice(0, 10)) +
+    "T" + hhmm + ":00Z");
+  return pad2(d.getHours()) + ":" + pad2(d.getMinutes());
+}
+
+function localToUtc(dateStr, hhmm) {
+  var d = new Date((dateStr || new Date().toISOString().slice(0, 10)) +
+    "T" + hhmm + ":00");
+  return d.toISOString().slice(11, 16);
+}
+
+function updateContentLink() {
+  var s = settings();
+  el("content-gh-link").href = "https://github.com/" + s.owner + "/" + s.repo +
+    "/tree/" + s.branch + "/content";
+}
+
+function loadCampaign() {
+  var s = settings();
+  updateContentLink();
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + CAMPAIGN_PATH +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
+    campaignState.sha = r.sha;
+    campaignState.data = JSON.parse(b64decode(r.content));
+    var c = campaignState.data;
+    el("c-enabled").checked = !!c.enabled;
+    el("c-start").value = c.start_date || "";
+    el("c-posts-time").value = utcToLocal(c.start_date, c.posts_time_utc || "07:00");
+    el("c-stories-time").value = utcToLocal(c.start_date, c.stories_time_utc || "10:00");
+  }).catch(function (e) {
+    status("content-status", "err", "Could not load campaign settings: " + e.message);
+  });
+}
+
+el("save-campaign").onclick = function () {
+  var s = settings();
+  saveSettings();
+  var startDate = el("c-start").value;
+  var enabled = el("c-enabled").checked;
+  if (enabled && !startDate) {
+    status("content-status", "err", "Pick a start date before enabling.");
+    return;
+  }
+  var data = {
+    enabled: enabled,
+    start_date: startDate,
+    posts_time_utc: localToUtc(startDate, el("c-posts-time").value || "09:00"),
+    stories_time_utc: localToUtc(startDate, el("c-stories-time").value || "12:00")
+  };
+  status("content-status", "info", "Saving...");
+  var body = {
+    message: "Update content campaign settings via dashboard",
+    content: b64encode(JSON.stringify(data, null, 2) + "\n"),
+    branch: s.branch
+  };
+  if (campaignState.sha) body.sha = campaignState.sha;
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + CAMPAIGN_PATH, {
+    method: "PUT", body: JSON.stringify(body)
+  }).then(function (r) {
+    campaignState.sha = r.content.sha;
+    campaignState.data = data;
+    status("content-status", "ok", enabled
+      ? "Saved. Folder posting is ON. day1 = " + startDate + "."
+      : "Saved. Folder posting is off.");
+    renderContentPlan();
+  }).catch(function (e) {
+    status("content-status", "err", "Save failed: " + e.message);
+  });
+};
+
+function isMediaName(name) {
+  return /\.(jpe?g|png|webp|mp4|mov)$/i.test(name);
+}
+
+function loadContentPlan() {
+  var s = settings();
+  updateContentLink();
+  status("content-status", "info", "Loading content folders...");
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/content?ref=" +
+      encodeURIComponent(s.branch)).then(function (entries) {
+    var dayDirs = (entries || []).filter(function (e) {
+      return e.type === "dir" && /^day\d+$/i.test(e.name);
+    });
+    var fetches = dayDirs.map(function (dir) {
+      var n = parseInt(dir.name.replace(/\D/g, ""), 10);
+      function count(kind) {
+        return api("/repos/" + s.owner + "/" + s.repo + "/contents/content/" +
+            dir.name + "/" + kind + "?ref=" + encodeURIComponent(s.branch))
+          .then(function (files) {
+            return (files || []).filter(function (f) {
+              return f.type === "file" && isMediaName(f.name);
+            }).length;
+          }).catch(function () { return 0; });
+      }
+      return Promise.all([count("posts"), count("stories")]).then(function (c) {
+        return { n: n, name: dir.name, posts: c[0], stories: c[1] };
+      });
+    });
+    return Promise.all(fetches);
+  }).then(function (days) {
+    contentDays = days.sort(function (a, b) { return a.n - b.n; });
+    el("content-status").className = "status";
+    renderContentPlan();
+  }).catch(function (e) {
+    contentDays = [];
+    renderContentPlan();
+    status("content-status", "err", "No content folder found yet (" + e.message +
+      "). Use Create next day folder to start.");
+  });
+}
+
+function spacingLabel(count) {
+  if (count <= 1) return count === 1 ? "single" : "-";
+  var mins = Math.max(180, Math.min(360, Math.floor(720 / count)));
+  return (mins / 60) + "h apart";
+}
+
+function renderContentPlan() {
+  var wrap = el("content-plan");
+  if (!contentDays.length) {
+    wrap.innerHTML = "<p class='note'>No day folders yet.</p>";
+    return;
+  }
+  var c = campaignState.data || {};
+  var start = c.start_date ? new Date(c.start_date + "T00:00:00") : null;
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var rows = contentDays.map(function (d) {
+    var dateLabel = "-", state = "set a start date", cls = "run";
+    if (start) {
+      var dt = new Date(start);
+      dt.setDate(dt.getDate() + (d.n - 1));
+      dateLabel = dt.toDateString();
+      if (dt < today) { state = "past"; cls = "err"; }
+      else if (dt.getTime() === today.getTime()) { state = "today"; cls = "ok"; }
+      else { state = "upcoming"; cls = "run"; }
+    }
+    return "<tr><td>" + esc(d.name) + "</td><td>" + esc(dateLabel) + "</td>" +
+      "<td>" + d.posts + " (" + spacingLabel(d.posts) + ")</td>" +
+      "<td>" + d.stories + " (" + spacingLabel(d.stories) + ")</td>" +
+      "<td><span class='pill " + cls + "'>" + esc(state) + "</span></td></tr>";
+  }).join("");
+  wrap.innerHTML =
+    "<table><thead><tr><th>Folder</th><th>Posts on</th><th>Feed files</th>" +
+    "<th>Story files</th><th>State</th></tr></thead><tbody>" + rows +
+    "</tbody></table>";
+}
+
+el("reload-content").onclick = function () { loadCampaign().then(loadContentPlan); };
+
+el("new-day").onclick = function () {
+  var s = settings();
+  var next = contentDays.length
+    ? Math.max.apply(null, contentDays.map(function (d) { return d.n; })) + 1
+    : 1;
+  var name = "day" + next;
+  status("content-status", "info", "Creating content/" + name + "...");
+  var keep = b64encode("Placeholder so the folder exists. Safe to leave here.\n");
+  putFile("content/" + name + "/posts/.gitkeep", keep, "Create " + name + " posts folder")
+    .then(function () {
+      return putFile("content/" + name + "/stories/.gitkeep", keep,
+        "Create " + name + " stories folder");
+    }).then(function () {
+      status("content-status", "ok", "Created content/" + name +
+        "/posts and /stories. Open the folders on GitHub to upload files.");
+      loadContentPlan();
+    }).catch(function (e) {
+      status("content-status", "err", "Failed: " + e.message);
+    });
+};
+
+el("run-content").onclick = function () {
+  var s = settings();
+  status("content-status", "info", "Triggering the publisher...");
+  api("/repos/" + s.owner + "/" + s.repo + "/actions/workflows/" + SCHEDULER_FILE +
+      "/dispatches", {
+    method: "POST", body: JSON.stringify({ ref: s.branch })
+  }).then(function () {
+    status("content-status", "ok",
+      "Publisher triggered. New files are converted, queued, and due items post now.");
+    setTimeout(function () { loadQueue(); loadContentPlan(); }, 6000);
+  }).catch(function (e) { status("content-status", "err", "Failed: " + e.message); });
+};
+
 // ---- Init ----
 loadSettings();
 buildSlots();
+updateContentLink();
 if (settings().token) {
   loadFlows();
   loadRuns();
   loadQueue();
+  loadCampaign().then(loadContentPlan);
 } else {
   status("setup-status", "info", "Enter a GitHub token and Save to begin.");
 }

@@ -53,6 +53,29 @@ each one at its chosen time and then deletes the image from the repo. The queue
 lives in `data/queue.json`. This requires the repo to be **Public** so Instagram
 can fetch the images.
 
+**Content folders (hands-free posting)** — instead of uploading through the UI,
+drop images/videos into repo folders and they post themselves:
+
+```
+content/day1/posts/     -> feed posts on the campaign start date
+content/day1/stories/   -> stories on the campaign start date
+content/day2/...        -> the next day, and so on
+```
+
+Set the start date and daily times in the dashboard's *Content folders* section
+(stored in `data/campaign.json`), and enable it. Multiple files in one folder
+spread across the day automatically: 2 files post 6h apart, 3 files 4h apart,
+4+ files 3h apart. Images are converted to JPEG and sized automatically
+(`.webp`/`.png` are fine; feed 1080x1080, story 1080x1920). Captions come from a
+matching `photo1.txt`, a folder `caption.txt`, or are auto-generated. Every
+15 minutes the scheduler (`scheduler.yml`) converts new images, queues them
+(visible/cancellable in the dashboard Queue), posts what is due, and deletes
+each file after posting. See `content/README.md` for details.
+
+**Tests** — `python -m pytest` runs the suite in `tests/` (image conversion,
+folder scheduling, queue posting/retries, Instagram API parameters, caption
+generation). CI runs it on every push via `.github/workflows/tests.yml`.
+
 It talks directly to the GitHub API using a fine-grained token you paste in
 (stored only in your browser). To use it:
 
