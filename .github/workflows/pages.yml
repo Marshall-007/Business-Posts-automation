@@ -5,10 +5,11 @@ name: Deploy dashboard to GitHub Pages
 # Note: GitHub Pages on a PRIVATE repo requires a paid plan. If the repo is
 # private on a free plan, make it Public, or just open docs/index.html locally.
 
+# Manual-only: run this after enabling Pages (Settings -> Pages -> Source:
+# GitHub Actions). Pages requires the repo to be Public (free plan) or a paid
+# plan for private repos. Until then this deploy will fail, so it does not run
+# automatically on push.
 on:
-  push:
-    branches: ["claude/account-setup-config-569zpw"]
-    paths: ["docs/**", ".github/workflows/pages.yml"]
   workflow_dispatch: {}
 
 permissions:
