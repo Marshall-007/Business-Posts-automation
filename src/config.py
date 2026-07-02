@@ -39,6 +39,9 @@ class Credentials:
         # Instagram Login flow (graph.instagram.com): token starts with "IGAA".
         self.instagram_access_token = env("INSTAGRAM_ACCESS_TOKEN")
         self.instagram_user_id = env("INSTAGRAM_USER_ID")
+        # Optional: lets a short-lived (1h) token be exchanged for a
+        # long-lived (60-day) one at post time.
+        self.instagram_app_secret = env("INSTAGRAM_APP_SECRET")
 
         self.linkedin_access_token = env("LINKEDIN_ACCESS_TOKEN")
         self.linkedin_author_urn = env("LINKEDIN_AUTHOR_URN")

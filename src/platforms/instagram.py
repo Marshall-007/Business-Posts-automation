@@ -27,19 +27,40 @@ class Instagram(Platform):
         )
 
     def _refresh_token(self) -> str:
-        """Best-effort refresh of a long-lived token so its 60-day clock resets
-        each run. Returns a refreshed token if successful, else the original.
-        Short-lived (1-hour) tokens cannot be refreshed this way; the original
-        is returned and used as-is."""
+        """Best-effort upgrade/refresh of the access token, returning the best
+        available token (never raises).
+
+        - If INSTAGRAM_APP_SECRET is set, first try to exchange a short-lived
+          (1-hour) token for a long-lived (60-day) one.
+        - Otherwise (or if that fails), try to refresh a long-lived token so
+          its 60-day clock resets.
+        A short-lived token with no app secret is used as-is."""
         token = self.creds.instagram_access_token
+
+        if self.creds.instagram_app_secret:
+            try:
+                resp = requests.get(
+                    "https://graph.instagram.com/access_token",
+                    params={
+                        "grant_type": "ig_exchange_token",
+                        "client_secret": self.creds.instagram_app_secret,
+                        "access_token": token,
+                    },
+                    timeout=30,
+                )
+                exchanged = resp.json().get("access_token")
+                if exchanged:
+                    return exchanged
+            except Exception:
+                pass
+
         try:
             resp = requests.get(
                 "https://graph.instagram.com/refresh_access_token",
                 params={"grant_type": "ig_refresh_token", "access_token": token},
                 timeout=30,
             )
-            data = resp.json()
-            return data.get("access_token", token)
+            return resp.json().get("access_token", token)
         except Exception:
             return token
 
