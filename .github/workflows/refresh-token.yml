@@ -1,0 +1,27 @@
+name: Refresh Instagram token
+
+# Keeps the long-lived Instagram token alive and writes the refreshed value back
+# to the INSTAGRAM_ACCESS_TOKEN secret. Runs weekly (tokens last 60 days) and can
+# be run manually. Requires a GH_PAT secret (fine-grained PAT with Secrets: write
+# on this repo) and, to upgrade a short-lived token the first time, INSTAGRAM_APP_SECRET.
+
+on:
+  schedule:
+    - cron: "0 6 * * 0" # Sundays 06:00 UTC
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests PyNaCl
+      - name: Refresh and persist token
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_APP_SECRET: ${{ secrets.INSTAGRAM_APP_SECRET }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: python scripts/refresh_instagram_token.py

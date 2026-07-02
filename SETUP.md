@@ -72,7 +72,17 @@ Without this key the system still works — it rotates through the
 3. Generate a user token and confirm it works:
    `https://graph.instagram.com/me?fields=id,username&access_token=IGAA…`
    The `id` it returns is your `INSTAGRAM_USER_ID`.
-4. For scheduled posting you need a **long-lived** token (60 days). The system auto-refreshes it on each run, so as long as it posts at least once every 60 days the token keeps renewing. If your token is short-lived (1 hour), generate a long-lived one from the app dashboard first.
+4. For scheduled posting you need a **long-lived** token (60 days). The
+   `Refresh Instagram token` workflow keeps it alive automatically and writes the
+   renewed token back to the secret. To enable it, add two more secrets:
+
+   | Secret name | Value |
+   |---|---|
+   | `INSTAGRAM_APP_SECRET` | Your Meta app's client secret (App settings → Basic). Needed once to upgrade a short-lived token to 60 days. |
+   | `GH_PAT` | A fine-grained PAT scoped to this repo with **Secrets: Read and write** (so the workflow can save the refreshed token). |
+
+   Then run **Actions → Refresh Instagram token → Run workflow** once. From then on
+   it refreshes weekly on its own and you never touch the token again.
 5. Instagram requires an image for every post — add public image URLs to `image_urls` in `config.yaml`; the system rotates through them.
 
 ## 5. LinkedIn
