@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gwalava Posts Dashboard</title>
+<style>
+  :root {
+    --bg: #18161e;
+    --panel: #211f29;
+    --panel2: #2a2833;
+    --line: #3a3745;
+    --text: #f5f2ee;
+    --muted: #b3aec2;
+    --accent: #c8894b;
+    --accent-dim: #9c6a39;
+    --ok: #4c9a6b;
+    --err: #c05a4d;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  header {
+    padding: 22px 24px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+  header .sub { color: var(--accent); font-size: 14px; }
+  main { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+  section {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px; margin-bottom: 22px;
+  }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .8px;
+       color: var(--muted); margin: 0 0 16px; font-weight: 600; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%; background: var(--panel2); border: 1px solid var(--line);
+    color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 14px;
+    font-family: inherit;
+  }
+  textarea { min-height: 80px; resize: vertical; }
+  .row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 180px; }
+  button {
+    background: var(--accent); color: #1a1620; border: none; cursor: pointer;
+    padding: 9px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+    font-family: inherit;
+  }
+  button:hover { background: var(--accent-dim); color: var(--text); }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
+  button.ghost:hover { background: var(--panel2); }
+  button.danger { background: transparent; border: 1px solid var(--err); color: var(--err); }
+  button.danger:hover { background: var(--err); color: var(--text); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .flow {
+    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+    margin-bottom: 12px; background: var(--panel2);
+  }
+  .flow h3 { margin: 0 0 4px; font-size: 15px; }
+  .flow .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; word-break: break-word; }
+  .flow .actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .checks { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
+  .checks label { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text); font-size: 14px; }
+  .checks input { width: auto; }
+  .status { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: 14px;
+            white-space: pre-wrap; display: none; }
+  .status.show { display: block; }
+  .status.ok { background: rgba(76,154,107,.15); border: 1px solid var(--ok); }
+  .status.err { background: rgba(192,90,77,.15); border: 1px solid var(--err); }
+  .status.info { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  a { color: var(--accent); }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 12px; }
+  .pill.ok { background: rgba(76,154,107,.2); color: #86d3a3; }
+  .pill.err { background: rgba(192,90,77,.2); color: #e0938a; }
+  .pill.run { background: rgba(200,137,75,.2); color: var(--accent); }
+  .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gwalava Boards</h1>
+  <span class="sub">Posts Dashboard</span>
+</header>
+<main>
+
+  <section id="setup">
+    <h2>Connection</h2>
+    <div class="row">
+      <div>
+        <label for="owner">Owner</label>
+        <input id="owner" type="text" autocomplete="off">
+      </div>
+      <div>
+        <label for="repo">Repository</label>
+        <input id="repo" type="text" autocomplete="off">
+      </div>
+      <div>
+        <label for="branch">Branch</label>
+        <input id="branch" type="text" autocomplete="off">
+      </div>
+    </div>
+    <label for="token">GitHub access token (fine-grained PAT with Actions: read/write and Contents: read/write on this repo)</label>
+    <input id="token" type="password" autocomplete="off" placeholder="github_pat_...">
+    <p class="note">Stored only in this browser (localStorage). It is never sent anywhere except GitHub's API.</p>
+    <div class="btnrow">
+      <button id="save-setup">Save</button>
+      <button id="test-setup" class="ghost">Test connection</button>
+    </div>
+    <div id="setup-status" class="status"></div>
+  </section>
+
+  <section id="run">
+    <h2>Trigger a run now</h2>
+    <p class="note">Runs the posting workflow on GitHub. Choose a flow below, or run the standard post to every configured platform.</p>
+    <div class="btnrow">
+      <button id="run-standard">Run standard post</button>
+    </div>
+    <div id="run-status" class="status"></div>
+  </section>
+
+  <section id="flows">
+    <h2>Flows</h2>
+    <div id="flow-list"></div>
+    <div class="btnrow">
+      <button id="new-flow">Add flow</button>
+      <button id="reload-flows" class="ghost">Reload</button>
+    </div>
+    <div id="flows-status" class="status"></div>
+
+    <div id="editor" class="hidden" style="margin-top:20px; border-top:1px solid var(--line); padding-top:18px;">
+      <h2 id="editor-title">New flow</h2>
+      <div class="row">
+        <div>
+          <label for="f-id">Id (unique, no spaces)</label>
+          <input id="f-id" type="text" autocomplete="off">
+        </div>
+        <div>
+          <label for="f-name">Name</label>
+          <input id="f-name" type="text" autocomplete="off">
+        </div>
+      </div>
+      <label>Platforms (none selected = all configured)</label>
+      <div class="checks">
+        <label><input type="checkbox" class="f-plat" value="telegram">Telegram</label>
+        <label><input type="checkbox" class="f-plat" value="facebook">Facebook</label>
+        <label><input type="checkbox" class="f-plat" value="instagram">Instagram</label>
+        <label><input type="checkbox" class="f-plat" value="linkedin">LinkedIn</label>
+        <label><input type="checkbox" class="f-plat" value="twitter">X (Twitter)</label>
+      </div>
+      <label for="f-caption">Caption (leave blank to auto-generate)</label>
+      <textarea id="f-caption"></textarea>
+      <label for="f-image">Instagram image URL (leave blank to use config rotation)</label>
+      <input id="f-image" type="text" autocomplete="off">
+      <div class="btnrow">
+        <button id="save-flow">Save flow</button>
+        <button id="cancel-flow" class="ghost">Cancel</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="runs">
+    <h2>Recent runs</h2>
+    <div id="runs-table"></div>
+    <div class="btnrow">
+      <button id="refresh-runs" class="ghost">Refresh</button>
+    </div>
+    <div id="runs-status" class="status"></div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+
+var API = "https://api.github.com";
+var WORKFLOW_FILE = "post.yml";
+var FLOWS_PATH = "data/flows.json";
+
+var el = function (id) { return document.getElementById(id); };
+
+var DEFAULTS = {
+  owner: "Marshall-007",
+  repo: "Business-Posts-automation",
+  branch: "claude/account-setup-config-569zpw",
+  token: ""
+};
+
+function settings() {
+  return {
+    owner: (el("owner").value || "").trim(),
+    repo: (el("repo").value || "").trim(),
+    branch: (el("branch").value || "").trim(),
+    token: (el("token").value || "").trim()
+  };
+}
+
+function loadSettings() {
+  var saved;
+  try { saved = JSON.parse(localStorage.getItem("gwalava_dash") || "{}"); }
+  catch (e) { saved = {}; }
+  el("owner").value = saved.owner || DEFAULTS.owner;
+  el("repo").value = saved.repo || DEFAULTS.repo;
+  el("branch").value = saved.branch || DEFAULTS.branch;
+  el("token").value = saved.token || DEFAULTS.token;
+}
+
+function saveSettings() {
+  localStorage.setItem("gwalava_dash", JSON.stringify(settings()));
+}
+
+function status(id, kind, msg) {
+  var s = el(id);
+  s.className = "status show " + kind;
+  s.textContent = msg;
+}
+
+function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
+function b64decode(str) { return decodeURIComponent(escape(atob(str.replace(/\n/g, "")))); }
+
+function api(path, options) {
+  var s = settings();
+  if (!s.token) return Promise.reject(new Error("No access token set. Fill it in under Connection and Save."));
+  options = options || {};
+  options.headers = Object.assign({
+    "Authorization": "Bearer " + s.token,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28"
+  }, options.headers || {});
+  return fetch(API + path, options).then(function (resp) {
+    if (resp.status === 204) return {};
+    return resp.text().then(function (body) {
+      var data = body ? JSON.parse(body) : {};
+      if (!resp.ok) {
+        var m = data && data.message ? data.message : ("HTTP " + resp.status);
+        throw new Error(m);
+      }
+      return data;
+    });
+  });
+}
+
+// ---- Connection ----
+el("save-setup").onclick = function () {
+  saveSettings();
+  status("setup-status", "ok", "Saved.");
+};
+el("test-setup").onclick = function () {
+  saveSettings();
+  var s = settings();
+  status("setup-status", "info", "Testing...");
+  api("/repos/" + s.owner + "/" + s.repo).then(function (r) {
+    status("setup-status", "ok", "Connected to " + r.full_name +
+      (r.private ? " (private)" : " (public)") + ". Default branch: " + r.default_branch);
+  }).catch(function (e) {
+    status("setup-status", "err", "Failed: " + e.message);
+  });
+};
+
+// ---- Trigger runs ----
+function dispatch(inputs, statusId) {
+  var s = settings();
+  saveSettings();
+  status(statusId, "info", "Sending trigger...");
+  return api("/repos/" + s.owner + "/" + s.repo + "/actions/workflows/" +
+      WORKFLOW_FILE + "/dispatches", {
+    method: "POST",
+    body: JSON.stringify({ ref: s.branch, inputs: inputs || {} })
+  }).then(function () {
+    status(statusId, "ok", "Run triggered. It will appear under Recent runs in a few seconds.");
+    setTimeout(loadRuns, 3500);
+  }).catch(function (e) {
+    status(statusId, "err", "Failed: " + e.message);
+  });
+}
+
+el("run-standard").onclick = function () { dispatch({}, "run-status"); };
+
+// ---- Flows ----
+var flowsState = { flows: [], sha: null };
+
+function loadFlows() {
+  var s = settings();
+  status("flows-status", "info", "Loading flows...");
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + FLOWS_PATH +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
+    flowsState.sha = r.sha;
+    var parsed = JSON.parse(b64decode(r.content));
+    flowsState.flows = parsed.flows || [];
+    renderFlows();
+    el("flows-status").className = "status";
+  }).catch(function (e) {
+    status("flows-status", "err", "Could not load flows: " + e.message);
+  });
+}
+
+function renderFlows() {
+  var wrap = el("flow-list");
+  wrap.innerHTML = "";
+  if (!flowsState.flows.length) {
+    wrap.innerHTML = "<p class='note'>No flows yet. Add one below.</p>";
+    return;
+  }
+  flowsState.flows.forEach(function (f, idx) {
+    var div = document.createElement("div");
+    div.className = "flow";
+    var plats = (f.platforms && f.platforms.length) ? f.platforms.join(", ") : "all configured";
+    var cap = f.caption ? (f.caption.length > 90 ? f.caption.slice(0, 90) + "..." : f.caption) : "auto-generated";
+    var meta = "Platforms: " + plats + "  |  Caption: " + cap +
+      (f.image_url ? "  |  Image set" : "");
+    div.innerHTML =
+      "<h3></h3><div class='meta'></div><div class='actions'>" +
+      "<button data-run='" + idx + "'>Run now</button>" +
+      "<button class='ghost' data-edit='" + idx + "'>Edit</button>" +
+      "<button class='danger' data-del='" + idx + "'>Delete</button></div>";
+    div.querySelector("h3").textContent = f.name || f.id;
+    div.querySelector(".meta").textContent = meta;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll("[data-run]").forEach(function (b) {
+    b.onclick = function () {
+      var f = flowsState.flows[+b.getAttribute("data-run")];
+      dispatch({ flow: f.id }, "flows-status");
+    };
+  });
+  wrap.querySelectorAll("[data-edit]").forEach(function (b) {
+    b.onclick = function () { openEditor(+b.getAttribute("data-edit")); };
+  });
+  wrap.querySelectorAll("[data-del]").forEach(function (b) {
+    b.onclick = function () {
+      var i = +b.getAttribute("data-del");
+      if (confirm("Delete flow \"" + (flowsState.flows[i].name || flowsState.flows[i].id) + "\"?")) {
+        flowsState.flows.splice(i, 1);
+        commitFlows("Delete flow via dashboard");
+      }
+    };
+  });
+}
+
+var editingIndex = -1;
+
+function openEditor(idx) {
+  editingIndex = (typeof idx === "number") ? idx : -1;
+  var f = editingIndex >= 0 ? flowsState.flows[editingIndex] :
+    { id: "", name: "", platforms: [], caption: "", image_url: "" };
+  el("editor-title").textContent = editingIndex >= 0 ? "Edit flow" : "New flow";
+  el("f-id").value = f.id || "";
+  el("f-name").value = f.name || "";
+  el("f-caption").value = f.caption || "";
+  el("f-image").value = f.image_url || "";
+  document.querySelectorAll(".f-plat").forEach(function (c) {
+    c.checked = (f.platforms || []).indexOf(c.value) >= 0;
+  });
+  el("editor").classList.remove("hidden");
+  el("editor").scrollIntoView({ behavior: "smooth" });
+}
+
+function slugify(s) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+el("new-flow").onclick = function () { openEditor(-1); };
+el("cancel-flow").onclick = function () { el("editor").classList.add("hidden"); };
+el("reload-flows").onclick = function () { loadFlows(); };
+
+el("save-flow").onclick = function () {
+  var name = el("f-name").value.trim();
+  var id = el("f-id").value.trim() || slugify(name);
+  if (!id) { status("flows-status", "err", "A name or id is required."); return; }
+  var plats = [];
+  document.querySelectorAll(".f-plat").forEach(function (c) { if (c.checked) plats.push(c.value); });
+  var flow = {
+    id: id, name: name || id, platforms: plats,
+    caption: el("f-caption").value, image_url: el("f-image").value.trim()
+  };
+  // uniqueness check (allow overwriting the one being edited)
+  var clash = flowsState.flows.findIndex(function (x, i) { return x.id === id && i !== editingIndex; });
+  if (clash >= 0) { status("flows-status", "err", "A flow with id \"" + id + "\" already exists."); return; }
+  if (editingIndex >= 0) flowsState.flows[editingIndex] = flow;
+  else flowsState.flows.push(flow);
+  commitFlows(editingIndex >= 0 ? "Update flow via dashboard" : "Add flow via dashboard");
+  el("editor").classList.add("hidden");
+};
+
+function commitFlows(message) {
+  var s = settings();
+  var content = JSON.stringify({ flows: flowsState.flows }, null, 2) + "\n";
+  status("flows-status", "info", "Saving to GitHub...");
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + FLOWS_PATH, {
+    method: "PUT",
+    body: JSON.stringify({
+      message: message, content: b64encode(content),
+      sha: flowsState.sha, branch: s.branch
+    })
+  }).then(function (r) {
+    flowsState.sha = r.content.sha;
+    status("flows-status", "ok", "Saved.");
+    renderFlows();
+  }).catch(function (e) {
+    status("flows-status", "err", "Save failed: " + e.message);
+    loadFlows();
+  });
+}
+
+// ---- Recent runs ----
+function loadRuns() {
+  var s = settings();
+  status("runs-status", "info", "Loading...");
+  api("/repos/" + s.owner + "/" + s.repo + "/actions/runs?per_page=10").then(function (r) {
+    var runs = r.workflow_runs || [];
+    el("runs-status").className = "status";
+    if (!runs.length) { el("runs-table").innerHTML = "<p class='note'>No runs yet.</p>"; return; }
+    var rows = runs.map(function (run) {
+      var state, cls;
+      if (run.status !== "completed") { state = run.status; cls = "run"; }
+      else if (run.conclusion === "success") { state = "success"; cls = "ok"; }
+      else { state = run.conclusion || "failed"; cls = "err"; }
+      var when = new Date(run.created_at).toLocaleString();
+      return "<tr><td>" + esc(run.name) + "</td>" +
+        "<td><span class='pill " + cls + "'>" + esc(state) + "</span></td>" +
+        "<td>" + esc(run.event) + "</td>" +
+        "<td>" + esc(when) + "</td>" +
+        "<td><a href='" + run.html_url + "' target='_blank' rel='noopener'>view</a></td></tr>";
+    }).join("");
+    el("runs-table").innerHTML =
+      "<table><thead><tr><th>Workflow</th><th>Status</th><th>Event</th><th>When</th><th></th></tr></thead><tbody>" +
+      rows + "</tbody></table>";
+  }).catch(function (e) {
+    status("runs-status", "err", "Failed: " + e.message);
+  });
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+  });
+}
+
+el("refresh-runs").onclick = loadRuns;
+
+// ---- Init ----
+loadSettings();
+if (settings().token) {
+  loadFlows();
+  loadRuns();
+} else {
+  status("setup-status", "info", "Enter a GitHub token and Save to begin.");
+}
+</script>
+</body>
+</html>

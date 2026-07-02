@@ -10,7 +10,7 @@ Usage:
 import argparse
 import sys
 
-from . import content_generator, history
+from . import content_generator, flows, history
 from .config import Credentials, load_business_config
 from .platforms import PostError, build_platforms
 
@@ -22,10 +22,28 @@ def main() -> int:
         "--platforms",
         help="Comma-separated subset of platforms to publish to (default: all configured)",
     )
+    parser.add_argument(
+        "--flow",
+        help="Run a named flow from data/flows.json (overrides platforms/caption/image)",
+    )
     args = parser.parse_args()
 
     creds = Credentials()
     business_config = load_business_config()
+
+    # A flow can override the platform list, caption, and Instagram image.
+    flow = None
+    platform_filter = args.platforms
+    if args.flow:
+        flow = flows.get_flow(args.flow)
+        if flow is None:
+            print(f"Unknown flow: {args.flow}", file=sys.stderr)
+            return 2
+        if flow.get("platforms"):
+            platform_filter = ",".join(flow["platforms"])
+        if flow.get("image_url"):
+            business_config = {**business_config, "image_urls": [flow["image_url"]]}
+
     platforms = build_platforms(creds, business_config)
 
     if args.command == "platforms":
@@ -36,17 +54,21 @@ def main() -> int:
         return 0
 
     enabled = [p for p in platforms if p.is_configured()]
-    if args.platforms:
-        wanted = {name.strip().lower() for name in args.platforms.split(",")}
+    if platform_filter:
+        wanted = {name.strip().lower() for name in platform_filter.split(",")}
         unknown = wanted - {p.name for p in platforms}
         if unknown:
             print(f"Unknown platform(s): {', '.join(sorted(unknown))}", file=sys.stderr)
             return 2
         enabled = [p for p in enabled if p.name in wanted]
 
-    topic, posts = content_generator.generate_posts(
-        business_config, creds.anthropic_api_key
-    )
+    if flow and flow.get("caption"):
+        topic = flow.get("name", args.flow)
+        posts = content_generator.posts_from_caption(business_config, flow["caption"])
+    else:
+        topic, posts = content_generator.generate_posts(
+            business_config, creds.anthropic_api_key
+        )
     print(f"Topic: {topic}\n")
 
     if args.command == "preview":

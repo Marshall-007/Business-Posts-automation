@@ -89,6 +89,12 @@ def _generate_from_templates(business_config: dict) -> dict[str, str]:
         "Thanks for following us — more updates coming soon!"
     ]
     text = templates[history.post_count() % len(templates)]
+    return posts_from_caption(business_config, text)
+
+
+def posts_from_caption(business_config: dict, text: str) -> dict[str, str]:
+    """Build a per-platform post dict from one caption, applying hashtags where
+    useful and enforcing the X character limit."""
     hashtags = " ".join(business_config.get("hashtags", []))
     posts = {}
     for platform in PLATFORM_RULES:

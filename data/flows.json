@@ -1,0 +1,11 @@
+{
+  "flows": [
+    {
+      "id": "default",
+      "name": "Standard post (all configured platforms)",
+      "platforms": [],
+      "caption": "",
+      "image_url": ""
+    }
+  ]
+}
