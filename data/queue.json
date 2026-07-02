@@ -1,3 +1,34 @@
 {
-  "items": []
+  "items": [
+    {
+      "id": "post_1783025414097_692332",
+      "media_path": "docs/uploads/post_1783025414097_692332.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/d4cfe13b5760a94a5a6dca49d57c13ae5be01d5b/docs/uploads/post_1783025414097_692332.jpg",
+      "media_type": "IMAGE",
+      "caption": "At Gwalava Boards and Furniture Fittings, we are dedicated to providing top-notch products and services to meet your furniture needs. With our commitment to quality and innovation, we ensure that every project is completed with precision and expertise.",
+      "scheduled_at": "2026-07-03T06:50:00.000Z",
+      "status": "pending",
+      "attempts": 0
+    },
+    {
+      "id": "post_1783025415985_677072",
+      "media_path": "docs/uploads/post_1783025415985_677072.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/2ef7c16f8b6b54f6a536f365efff0c2367deef9f/docs/uploads/post_1783025415985_677072.jpg",
+      "media_type": "IMAGE",
+      "caption": "At Gwalava Boards and Furniture Fittings, we are dedicated to providing top-notch products and services to meet your furniture needs. With our commitment to quality and innovation, we ensure that every project is completed with precision and expertise.",
+      "scheduled_at": "2026-07-03T18:54:00.000Z",
+      "status": "pending",
+      "attempts": 0
+    },
+    {
+      "id": "post_1783025417835_478161",
+      "media_path": "docs/uploads/post_1783025417835_478161.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/4569d155e4ea6f07069729b79a5b18bc400c8c0e/docs/uploads/post_1783025417835_478161.jpg",
+      "media_type": "IMAGE",
+      "caption": "At Gwalava Boards and Furniture Fittings, we are dedicated to providing top-notch products and services to meet your furniture needs. With our commitment to quality and innovation, we ensure that every project is completed with precision and expertise.",
+      "scheduled_at": "2026-07-03T15:30:00.000Z",
+      "status": "pending",
+      "attempts": 0
+    }
+  ]
 }
