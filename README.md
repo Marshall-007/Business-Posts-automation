@@ -45,6 +45,14 @@ A no-backend web dashboard lives in `docs/index.html`. It lets you:
   GitHub Actions workflow, which publishes for you.
 - **See recent runs** — status and links to each workflow run.
 
+**Schedule Instagram posts** — the dashboard also has a *Schedule Instagram posts*
+section: add up to three images with captions and a day/time for each. Each image
+is squared to 1080x1080 (white padding) and uploaded to the repo; the
+`Scheduled Instagram queue` workflow (`scheduler.yml`, runs every 15 min) posts
+each one at its chosen time and then deletes the image from the repo. The queue
+lives in `data/queue.json`. This requires the repo to be **Public** so Instagram
+can fetch the images.
+
 It talks directly to the GitHub API using a fine-grained token you paste in
 (stored only in your browser). To use it:
 

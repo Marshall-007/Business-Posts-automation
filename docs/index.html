@@ -128,6 +128,28 @@
     <div id="run-status" class="status"></div>
   </section>
 
+  <section id="schedule">
+    <h2>Schedule Instagram posts</h2>
+    <p class="note">Add up to three images with captions and a day/time for each.
+      Images are uploaded to your repo, posted to Instagram at the chosen time,
+      then removed. Images are squared to 1080x1080 with white padding so
+      Instagram always accepts them. Requires the repo to be Public so Instagram
+      can fetch the images.</p>
+    <div id="slots"></div>
+    <div class="btnrow">
+      <button id="schedule-all">Schedule these posts</button>
+    </div>
+    <div id="schedule-status" class="status"></div>
+
+    <h2 style="margin-top:24px;">Queue</h2>
+    <div id="queue-list"></div>
+    <div class="btnrow">
+      <button id="reload-queue" class="ghost">Reload queue</button>
+      <button id="run-queue" class="ghost">Process due posts now</button>
+    </div>
+    <div id="queue-status" class="status"></div>
+  </section>
+
   <section id="flows">
     <h2>Flows</h2>
     <div id="flow-list"></div>
@@ -447,11 +469,210 @@ function esc(s) {
 
 el("refresh-runs").onclick = loadRuns;
 
+// ---- Schedule Instagram posts ----
+var SLOT_COUNT = 3;
+var UPLOAD_DIR = "docs/uploads";
+var QUEUE_PATH = "data/queue.json";
+var SQUARE = 1080;
+var queueState = { items: [], sha: null };
+
+function buildSlots() {
+  var wrap = el("slots");
+  var html = "";
+  for (var i = 0; i < SLOT_COUNT; i++) {
+    html +=
+      "<div class='flow'>" +
+      "<h3>Image " + (i + 1) + "</h3>" +
+      "<div class='row'>" +
+      "<div><label>Image file</label>" +
+      "<input type='file' accept='image/*' class='slot-file' data-i='" + i + "'></div>" +
+      "<div><label>Date</label><input type='date' class='slot-date' data-i='" + i + "'></div>" +
+      "<div><label>Time (your local time)</label><input type='time' class='slot-time' data-i='" + i + "'></div>" +
+      "</div>" +
+      "<label>Caption</label><textarea class='slot-caption' data-i='" + i + "'></textarea>" +
+      "<div class='meta slot-preview' data-i='" + i + "'></div>" +
+      "</div>";
+  }
+  wrap.innerHTML = html;
+  document.querySelectorAll(".slot-file").forEach(function (inp) {
+    inp.onchange = function () {
+      var p = document.querySelector(".slot-preview[data-i='" + inp.getAttribute("data-i") + "']");
+      p.textContent = inp.files[0] ? ("Selected: " + inp.files[0].name) : "";
+    };
+  });
+}
+
+function fileToSquareJpeg(file) {
+  return new Promise(function (resolve, reject) {
+    var img = new Image();
+    var url = URL.createObjectURL(file);
+    img.onload = function () {
+      URL.revokeObjectURL(url);
+      var canvas = document.createElement("canvas");
+      canvas.width = SQUARE; canvas.height = SQUARE;
+      var ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, SQUARE, SQUARE);
+      var scale = Math.min(SQUARE / img.width, SQUARE / img.height);
+      var w = img.width * scale, h = img.height * scale;
+      ctx.drawImage(img, (SQUARE - w) / 2, (SQUARE - h) / 2, w, h);
+      resolve(canvas.toDataURL("image/jpeg", 0.9).split(",")[1]);
+    };
+    img.onerror = function () { reject(new Error("Could not read image")); };
+    img.src = url;
+  });
+}
+
+function putFile(path, base64Content, message) {
+  var s = settings();
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + path, {
+    method: "PUT",
+    body: JSON.stringify({
+      message: message, content: base64Content, branch: s.branch
+    })
+  });
+}
+
+el("schedule-all").onclick = async function () {
+  var s = settings();
+  saveSettings();
+  var slots = [];
+  for (var i = 0; i < SLOT_COUNT; i++) {
+    var file = document.querySelector(".slot-file[data-i='" + i + "']").files[0];
+    var date = document.querySelector(".slot-date[data-i='" + i + "']").value;
+    var time = document.querySelector(".slot-time[data-i='" + i + "']").value;
+    var caption = document.querySelector(".slot-caption[data-i='" + i + "']").value;
+    if (!file && !date && !time && !caption) continue; // empty slot
+    if (!file || !date || !time) {
+      status("schedule-status", "err", "Image " + (i + 1) + ": need a file, a date and a time.");
+      return;
+    }
+    slots.push({ file: file, date: date, time: time, caption: caption });
+  }
+  if (!slots.length) { status("schedule-status", "err", "Fill in at least one image."); return; }
+
+  status("schedule-status", "info", "Uploading and scheduling...");
+  try {
+    await loadQueue(true);
+    for (var j = 0; j < slots.length; j++) {
+      var sl = slots[j];
+      var b64 = await fileToSquareJpeg(sl.file);
+      var id = "post_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+      var path = UPLOAD_DIR + "/" + id + ".jpg";
+      var res = await putFile(path, b64, "Queue image " + id);
+      var commitSha = res.commit.sha;
+      var imageUrl = "https://raw.githubusercontent.com/" + s.owner + "/" + s.repo +
+        "/" + commitSha + "/" + path;
+      var scheduledAt = new Date(sl.date + "T" + sl.time).toISOString();
+      queueState.items.push({
+        id: id, image_path: path, image_url: imageUrl,
+        caption: sl.caption, scheduled_at: scheduledAt,
+        status: "pending", attempts: 0
+      });
+    }
+    await saveQueue("Schedule " + slots.length + " Instagram post(s)");
+    status("schedule-status", "ok", "Scheduled " + slots.length + " post(s).");
+    buildSlots();
+    renderQueue();
+  } catch (e) {
+    status("schedule-status", "err", "Failed: " + e.message);
+  }
+};
+
+function loadQueue(silent) {
+  var s = settings();
+  if (!silent) status("queue-status", "info", "Loading queue...");
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + QUEUE_PATH +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
+    queueState.sha = r.sha;
+    var parsed = JSON.parse(b64decode(r.content));
+    queueState.items = parsed.items || [];
+    if (!silent) { renderQueue(); el("queue-status").className = "status"; }
+  }).catch(function (e) {
+    if (!silent) status("queue-status", "err", "Could not load queue: " + e.message);
+  });
+}
+
+function saveQueue(message) {
+  var s = settings();
+  var content = JSON.stringify({ items: queueState.items }, null, 2) + "\n";
+  var body = {
+    message: message, content: b64encode(content), branch: s.branch
+  };
+  if (queueState.sha) body.sha = queueState.sha;
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + QUEUE_PATH, {
+    method: "PUT", body: JSON.stringify(body)
+  }).then(function (r) { queueState.sha = r.content.sha; });
+}
+
+function renderQueue() {
+  var wrap = el("queue-list");
+  wrap.innerHTML = "";
+  if (!queueState.items.length) {
+    wrap.innerHTML = "<p class='note'>Queue is empty.</p>";
+    return;
+  }
+  var rows = queueState.items.map(function (it) {
+    var when = new Date(it.scheduled_at).toLocaleString();
+    var cls = it.status === "posted" ? "ok" : (it.status === "error" ? "err" : "run");
+    var cap = it.caption ? esc(it.caption.slice(0, 80)) : "(no caption)";
+    var cancel = it.status === "pending"
+      ? "<button class='danger' data-cancel='" + esc(it.id) + "'>Cancel</button>" : "";
+    return "<tr><td>" + cap + "</td><td>" + esc(when) + "</td>" +
+      "<td><span class='pill " + cls + "'>" + esc(it.status) + "</span></td>" +
+      "<td>" + cancel + "</td></tr>";
+  }).join("");
+  wrap.innerHTML =
+    "<table><thead><tr><th>Caption</th><th>When (local)</th><th>Status</th><th></th></tr></thead><tbody>" +
+    rows + "</tbody></table>";
+  wrap.querySelectorAll("[data-cancel]").forEach(function (b) {
+    b.onclick = function () { cancelItem(b.getAttribute("data-cancel")); };
+  });
+}
+
+function cancelItem(id) {
+  var item = queueState.items.find(function (x) { return x.id === id; });
+  if (!item || !confirm("Cancel this scheduled post?")) return;
+  var s = settings();
+  status("queue-status", "info", "Cancelling...");
+  // Best-effort delete of the image file, then drop the queue entry.
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + item.image_path +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (f) {
+    return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + item.image_path, {
+      method: "DELETE",
+      body: JSON.stringify({ message: "Cancel " + id, sha: f.sha, branch: s.branch })
+    });
+  }).catch(function () { /* image may already be gone */ }).then(function () {
+    queueState.items = queueState.items.filter(function (x) { return x.id !== id; });
+    return saveQueue("Cancel scheduled post " + id);
+  }).then(function () {
+    status("queue-status", "ok", "Cancelled.");
+    renderQueue();
+  }).catch(function (e) {
+    status("queue-status", "err", "Failed: " + e.message);
+    loadQueue();
+  });
+}
+
+el("reload-queue").onclick = function () { loadQueue(); };
+el("run-queue").onclick = function () {
+  status("queue-status", "info", "Triggering the queue processor...");
+  var s = settings();
+  api("/repos/" + s.owner + "/" + s.repo + "/actions/workflows/scheduler.yml/dispatches", {
+    method: "POST", body: JSON.stringify({ ref: s.branch })
+  }).then(function () {
+    status("queue-status", "ok", "Queue processor triggered. Due posts will go out shortly.");
+    setTimeout(function () { loadQueue(); }, 4000);
+  }).catch(function (e) { status("queue-status", "err", "Failed: " + e.message); });
+};
+
 // ---- Init ----
 loadSettings();
+buildSlots();
 if (settings().token) {
   loadFlows();
   loadRuns();
+  loadQueue();
 } else {
   status("setup-status", "info", "Enter a GitHub token and Save to begin.");
 }

@@ -1,0 +1,49 @@
+name: Scheduled Instagram queue
+
+# Posts images from data/queue.json when their scheduled time arrives, then
+# removes each posted image from the repo. Runs every 15 minutes.
+# Note: GitHub cron can be delayed several minutes under load, so posts go out
+# at or shortly after the chosen time.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-queue
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Post any due items
+        env:
+          INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+          INSTAGRAM_USER_ID: ${{ secrets.INSTAGRAM_USER_ID }}
+          INSTAGRAM_APP_SECRET: ${{ secrets.INSTAGRAM_APP_SECRET }}
+        run: python -m src.queue_runner
+
+      - name: Commit queue changes and removed images
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A data/queue.json docs/uploads
+          if ! git diff --cached --quiet; then
+            git commit -m "Process Instagram queue [skip ci]"
+            git push
+          fi
