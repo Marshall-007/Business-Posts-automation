@@ -1,9 +1,9 @@
 """Instagram publisher using the Instagram API with Instagram Login.
 
-Uses graph.instagram.com and an "IGAA…" access token plus the Instagram user id
-(from GET https://graph.instagram.com/me). This flow does not require a Facebook
-Page. Every Instagram post must include a publicly reachable image URL, so
-image_urls must be populated in config.yaml.
+Uses graph.instagram.com and an "IGAA..." access token plus the Instagram user id.
+Supports both images (feed) and videos (Reels). Every post needs a publicly
+reachable media URL, so image_urls must be populated in config.yaml for the
+default scheduled post; the queue passes per-item media URLs directly.
 """
 
 import time
@@ -27,14 +27,7 @@ class Instagram(Platform):
         )
 
     def _refresh_token(self) -> str:
-        """Best-effort upgrade/refresh of the access token, returning the best
-        available token (never raises).
-
-        - If INSTAGRAM_APP_SECRET is set, first try to exchange a short-lived
-          (1-hour) token for a long-lived (60-day) one.
-        - Otherwise (or if that fails), try to refresh a long-lived token so
-          its 60-day clock resets.
-        A short-lived token with no app secret is used as-is."""
+        """Best-effort upgrade/refresh of the access token (never raises)."""
         token = self.creds.instagram_access_token
 
         if self.creds.instagram_app_secret:
@@ -65,28 +58,39 @@ class Instagram(Platform):
             return token
 
     def publish(self, text: str) -> str:
+        """Default scheduled post: publish an image from config.yaml."""
         images = self.business_config.get("image_urls") or []
         if not images:
             raise PostError(
-                "Instagram requires an image; add public URLs to image_urls in config.yaml"
+                "Instagram requires media; add public URLs to image_urls in config.yaml"
             )
         image_url = images[history.post_count() % len(images)]
+        return self.publish_media(text, image_url, "IMAGE")
+
+    def publish_media(self, caption: str, media_url: str, media_type: str = "IMAGE") -> str:
+        """Publish a single image (media_type "IMAGE") or video Reel ("REELS")."""
         user_id = self.creds.instagram_user_id
         token = self._refresh_token()
+        is_video = media_type.upper() == "REELS"
 
-        # Step 1: create a media container.
-        resp = requests.post(
-            f"{GRAPH}/{user_id}/media",
-            data={"image_url": image_url, "caption": text, "access_token": token},
-            timeout=60,
-        )
+        # Step 1: create the media container.
+        params = {"caption": caption, "access_token": token}
+        if is_video:
+            params["media_type"] = "REELS"
+            params["video_url"] = media_url
+            params["share_to_feed"] = "true"
+        else:
+            params["image_url"] = media_url
+
+        resp = requests.post(f"{GRAPH}/{user_id}/media", data=params, timeout=60)
         data = resp.json()
         if "error" in data:
             raise PostError(f"Instagram container error: {data['error'].get('message')}")
         container_id = data["id"]
 
-        # Step 2: wait for the container to finish processing.
-        for _ in range(15):
+        # Step 2: wait for processing (videos take much longer than images).
+        attempts = 90 if is_video else 15
+        for _ in range(attempts):
             status = requests.get(
                 f"{GRAPH}/{container_id}",
                 params={"fields": "status_code", "access_token": token},
@@ -96,8 +100,8 @@ class Instagram(Platform):
             if code == "FINISHED":
                 break
             if code == "ERROR":
-                raise PostError("Instagram media processing failed (bad image URL?)")
-            time.sleep(3)
+                raise PostError("Instagram media processing failed (bad URL or format?)")
+            time.sleep(4)
         else:
             raise PostError("Instagram media did not finish processing in time")
 

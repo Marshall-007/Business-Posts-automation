@@ -130,11 +130,12 @@
 
   <section id="schedule">
     <h2>Schedule Instagram posts</h2>
-    <p class="note">Add up to three images with captions and a day/time for each.
-      Images are uploaded to your repo, posted to Instagram at the chosen time,
-      then removed. Images are squared to 1080x1080 with white padding so
-      Instagram always accepts them. Requires the repo to be Public so Instagram
-      can fetch the images.</p>
+    <p class="note">Add up to three images or videos with captions and a day/time
+      for each. Media is uploaded to your repo, posted to Instagram at the chosen
+      time, then removed. Images are squared to 1080x1080 with white padding.
+      Videos are posted as Reels (MP4/MOV; keep them under 40 MB for reliable
+      GitHub hosting). Requires the repo to be Public so Instagram can fetch the
+      media.</p>
     <div id="slots"></div>
     <div class="btnrow">
       <button id="schedule-all">Schedule these posts</button>
@@ -484,8 +485,8 @@ function buildSlots() {
       "<div class='flow'>" +
       "<h3>Image " + (i + 1) + "</h3>" +
       "<div class='row'>" +
-      "<div><label>Image file</label>" +
-      "<input type='file' accept='image/*' class='slot-file' data-i='" + i + "'></div>" +
+      "<div><label>Image or video</label>" +
+      "<input type='file' accept='image/*,video/*' class='slot-file' data-i='" + i + "'></div>" +
       "<div><label>Date</label><input type='date' class='slot-date' data-i='" + i + "'></div>" +
       "<div><label>Time (your local time)</label><input type='time' class='slot-time' data-i='" + i + "'></div>" +
       "</div>" +
@@ -499,6 +500,17 @@ function buildSlots() {
       var p = document.querySelector(".slot-preview[data-i='" + inp.getAttribute("data-i") + "']");
       p.textContent = inp.files[0] ? ("Selected: " + inp.files[0].name) : "";
     };
+  });
+}
+
+var MAX_VIDEO_MB = 40;
+
+function readFileBase64(file) {
+  return new Promise(function (resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function () { resolve(reader.result.split(",")[1]); };
+    reader.onerror = function () { reject(new Error("Could not read file")); };
+    reader.readAsDataURL(file);
   });
 }
 
@@ -556,16 +568,30 @@ el("schedule-all").onclick = async function () {
     await loadQueue(true);
     for (var j = 0; j < slots.length; j++) {
       var sl = slots[j];
-      var b64 = await fileToSquareJpeg(sl.file);
+      var isVideo = sl.file.type.indexOf("video") === 0;
+      var b64, ext, mediaType;
+      if (isVideo) {
+        if (sl.file.size > MAX_VIDEO_MB * 1024 * 1024) {
+          throw new Error("Video is over " + MAX_VIDEO_MB + " MB. Use a smaller file or a media host.");
+        }
+        b64 = await readFileBase64(sl.file);
+        ext = (sl.file.name.split(".").pop() || "mp4").toLowerCase();
+        if (ext !== "mp4" && ext !== "mov") ext = "mp4";
+        mediaType = "REELS";
+      } else {
+        b64 = await fileToSquareJpeg(sl.file);
+        ext = "jpg";
+        mediaType = "IMAGE";
+      }
       var id = "post_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
-      var path = UPLOAD_DIR + "/" + id + ".jpg";
-      var res = await putFile(path, b64, "Queue image " + id);
+      var path = UPLOAD_DIR + "/" + id + "." + ext;
+      var res = await putFile(path, b64, "Queue media " + id);
       var commitSha = res.commit.sha;
-      var imageUrl = "https://raw.githubusercontent.com/" + s.owner + "/" + s.repo +
+      var mediaUrl = "https://raw.githubusercontent.com/" + s.owner + "/" + s.repo +
         "/" + commitSha + "/" + path;
       var scheduledAt = new Date(sl.date + "T" + sl.time).toISOString();
       queueState.items.push({
-        id: id, image_path: path, image_url: imageUrl,
+        id: id, media_path: path, media_url: mediaUrl, media_type: mediaType,
         caption: sl.caption, scheduled_at: scheduledAt,
         status: "pending", attempts: 0
       });
@@ -615,15 +641,16 @@ function renderQueue() {
   var rows = queueState.items.map(function (it) {
     var when = new Date(it.scheduled_at).toLocaleString();
     var cls = it.status === "posted" ? "ok" : (it.status === "error" ? "err" : "run");
-    var cap = it.caption ? esc(it.caption.slice(0, 80)) : "(no caption)";
+    var cap = it.caption ? esc(it.caption.slice(0, 70)) : "(no caption)";
+    var type = (it.media_type === "REELS") ? "video" : "image";
     var cancel = it.status === "pending"
       ? "<button class='danger' data-cancel='" + esc(it.id) + "'>Cancel</button>" : "";
-    return "<tr><td>" + cap + "</td><td>" + esc(when) + "</td>" +
+    return "<tr><td>" + esc(type) + "</td><td>" + cap + "</td><td>" + esc(when) + "</td>" +
       "<td><span class='pill " + cls + "'>" + esc(it.status) + "</span></td>" +
       "<td>" + cancel + "</td></tr>";
   }).join("");
   wrap.innerHTML =
-    "<table><thead><tr><th>Caption</th><th>When (local)</th><th>Status</th><th></th></tr></thead><tbody>" +
+    "<table><thead><tr><th>Type</th><th>Caption</th><th>When (local)</th><th>Status</th><th></th></tr></thead><tbody>" +
     rows + "</tbody></table>";
   wrap.querySelectorAll("[data-cancel]").forEach(function (b) {
     b.onclick = function () { cancelItem(b.getAttribute("data-cancel")); };
@@ -634,11 +661,12 @@ function cancelItem(id) {
   var item = queueState.items.find(function (x) { return x.id === id; });
   if (!item || !confirm("Cancel this scheduled post?")) return;
   var s = settings();
+  var mediaPath = item.media_path || item.image_path;
   status("queue-status", "info", "Cancelling...");
-  // Best-effort delete of the image file, then drop the queue entry.
-  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + item.image_path +
+  // Best-effort delete of the media file, then drop the queue entry.
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + mediaPath +
       "?ref=" + encodeURIComponent(s.branch)).then(function (f) {
-    return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + item.image_path, {
+    return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + mediaPath, {
       method: "DELETE",
       body: JSON.stringify({ message: "Cancel " + id, sha: f.sha, branch: s.branch })
     });
