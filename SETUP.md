@@ -60,17 +60,20 @@ Without this key the system still works — it rotates through the
 4. In **Graph API Explorer** (Tools menu): select your app → get a **User token** with the permissions above → exchange it for a long-lived token → call `GET /me/accounts` to get your **Page ID** and **Page access token**.
 5. Store the Page ID and the Page access token as the secrets above.
 
-## 4. Instagram (business account, posts require an image)
+## 4. Instagram (Instagram Login flow — posts require an image)
 
 | Secret name | Value |
 |---|---|
-| `INSTAGRAM_BUSINESS_ACCOUNT_ID` | IG business account ID |
-| `FACEBOOK_PAGE_ACCESS_TOKEN` | Same token as Facebook (add `instagram_content_publish` permission) |
+| `INSTAGRAM_ACCESS_TOKEN` | Access token starting with `IGAA…` |
+| `INSTAGRAM_USER_ID` | Your Instagram account ID (from `GET https://graph.instagram.com/me`) |
 
-1. Convert your Instagram account to a **Business/Creator** account and link it to your Facebook Page (Instagram app → Settings → Business tools).
-2. In the same Facebook app as above, add the `instagram_basic` and `instagram_content_publish` permissions.
-3. Get the IG account ID: `GET /{page-id}?fields=instagram_business_account`.
-4. Instagram requires an image for every post — add public image URLs to `image_urls` in `config.yaml`; the system rotates through them.
+1. Your account must be a **Business** or **Creator** account (Instagram app → Settings → Account type and tools → Switch to professional account).
+2. Create an app at https://developers.facebook.com with the **Instagram** product, add the **Instagram Business Login** use case, and grant `instagram_business_basic` + `instagram_business_content_publish`.
+3. Generate a user token and confirm it works:
+   `https://graph.instagram.com/me?fields=id,username&access_token=IGAA…`
+   The `id` it returns is your `INSTAGRAM_USER_ID`.
+4. For scheduled posting you need a **long-lived** token (60 days). The system auto-refreshes it on each run, so as long as it posts at least once every 60 days the token keeps renewing. If your token is short-lived (1 hour), generate a long-lived one from the app dashboard first.
+5. Instagram requires an image for every post — add public image URLs to `image_urls` in `config.yaml`; the system rotates through them.
 
 ## 5. LinkedIn
 

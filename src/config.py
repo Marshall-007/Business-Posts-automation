@@ -36,7 +36,9 @@ class Credentials:
         self.facebook_page_id = env("FACEBOOK_PAGE_ID")
         self.facebook_page_access_token = env("FACEBOOK_PAGE_ACCESS_TOKEN")
 
-        self.instagram_business_account_id = env("INSTAGRAM_BUSINESS_ACCOUNT_ID")
+        # Instagram Login flow (graph.instagram.com): token starts with "IGAA".
+        self.instagram_access_token = env("INSTAGRAM_ACCESS_TOKEN")
+        self.instagram_user_id = env("INSTAGRAM_USER_ID")
 
         self.linkedin_access_token = env("LINKEDIN_ACCESS_TOKEN")
         self.linkedin_author_urn = env("LINKEDIN_AUTHOR_URN")
