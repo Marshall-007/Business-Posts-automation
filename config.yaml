@@ -1,0 +1,37 @@
+# Business profile used to generate posts. Edit everything in this file.
+
+business:
+  name: "My Business"
+  description: >
+    A short description of what the business does, who it serves,
+    and what makes it different.
+  website: "https://example.com"
+  tone: "friendly, professional, confident"
+  audience: "small business owners and entrepreneurs"
+  call_to_action: "Visit our website or send us a message to learn more."
+
+# Topics the generator rotates through (recently used ones are avoided).
+topics:
+  - "a customer success story or testimonial theme"
+  - "a practical tip related to our industry"
+  - "behind the scenes of how we work"
+  - "a common myth in our industry, debunked"
+  - "why quality matters more than price"
+  - "a seasonal or timely promotion"
+  - "frequently asked question and its answer"
+  - "what makes our service different"
+
+# Default hashtags appended where the platform benefits from them.
+hashtags:
+  - "#smallbusiness"
+  - "#business"
+
+# Public image URLs, required for Instagram posts (rotated in order).
+image_urls: []
+  # - "https://example.com/images/post1.jpg"
+
+# Used when no ANTHROPIC_API_KEY is configured (rotated in order).
+template_posts:
+  - "Quality isn't expensive — it's priceless. That's why we never cut corners. Get in touch to see the difference."
+  - "Behind every great business is a team that cares. Ours shows up for you every single day."
+  - "Got questions? We've got answers. Send us a message and we'll help you find exactly what you need."
