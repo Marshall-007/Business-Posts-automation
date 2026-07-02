@@ -75,6 +75,14 @@ matching `photo1.txt`, a folder `caption.txt`, or are auto-generated. Every
 (visible/cancellable in the dashboard Queue), posts what is due, and deletes
 each file after posting. See `content/README.md` for details.
 
+**Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
+*Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many
+feed posts and stories go in each day (2 or 3), and it sizes them (feed
+1080x1080, story 1080x1920), sorts them into `day1/day2/...` `posts`/`stories`
+folders for the chosen campaign, and commits them all in one commit via the Git
+Data API. A new campaign name is created automatically. Then set the campaign's
+start date and enable it.
+
 **Tests** — `python -m pytest` runs the suite in `tests/` (image conversion,
 folder scheduling, queue posting/retries, Instagram API parameters, caption
 generation). CI runs it on every push via `.github/workflows/tests.yml`.

@@ -168,6 +168,39 @@
       <button id="reload-content" class="ghost">Reload campaigns</button>
       <button id="run-content" class="ghost">Sync and post now</button>
     </div>
+
+    <div style="margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
+      <h2 style="margin-bottom:6px;">Bulk upload and auto-sort</h2>
+      <p class="note">Select a pile of unsorted images and they are sorted into
+        day folders for a campaign: feed images fill posts (2 or 3 per day),
+        story images fill stories (2 or 3 per day), creating day1, day2, day3...
+        as needed. Feed images are sized to 1080x1080, story images to
+        1080x1920, and everything is committed in one go. If the campaign name
+        is new it is created. After uploading, set the campaign's start date and
+        enable it.</p>
+      <div class="row">
+        <div><label>Campaign</label>
+          <input id="bulk-campaign" list="bulk-campaign-list" autocomplete="off"
+            placeholder="type a name or pick one">
+          <datalist id="bulk-campaign-list"></datalist></div>
+        <div><label>Feed posts per day</label>
+          <select id="bulk-ppd"><option>2</option><option>3</option></select></div>
+        <div><label>Stories per day</label>
+          <select id="bulk-spd"><option>2</option><option>3</option></select></div>
+        <div><label>Start at day</label>
+          <input id="bulk-startday" type="number" min="1" value="1"></div>
+      </div>
+      <label for="bulk-posts">Feed images (choose many)</label>
+      <input id="bulk-posts" type="file" accept="image/*" multiple>
+      <label for="bulk-stories">Story images (choose many)</label>
+      <input id="bulk-stories" type="file" accept="image/*" multiple>
+      <div class="btnrow">
+        <button id="bulk-plan" class="ghost">Preview plan</button>
+        <button id="bulk-upload">Sort and upload</button>
+      </div>
+      <div id="bulk-plan-out" class="note"></div>
+    </div>
+
     <div style="margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
       <label for="new-campaign-name">New campaign folder name</label>
       <div class="row">
@@ -882,6 +915,7 @@ function renderCampaigns() {
   wrap.querySelectorAll("[data-newday]").forEach(function (b) {
     b.onclick = function () { createNextDay(+b.getAttribute("data-newday")); };
   });
+  updateBulkDatalist();
 }
 
 function saveCampaign(ci) {
@@ -935,6 +969,130 @@ el("create-campaign").onclick = function () {
       status("content-status", "ok", "Created campaign " + name + " with day1. Upload files on GitHub, set a start date, and enable it.");
       loadCampaigns();
     }).catch(function (e) { status("content-status", "err", "Failed: " + e.message); });
+};
+
+// Bulk upload: commit many files in a single commit via the Git Data API.
+async function bulkCommit(files, message) {
+  var s = settings();
+  var repo = "/repos/" + s.owner + "/" + s.repo;
+  var ref = await api(repo + "/git/ref/heads/" + s.branch);
+  var headSha = ref.object.sha;
+  var headCommit = await api(repo + "/git/commits/" + headSha);
+  var tree = [];
+  for (var i = 0; i < files.length; i++) {
+    var blob = await api(repo + "/git/blobs", {
+      method: "POST",
+      body: JSON.stringify({ content: files[i].base64, encoding: "base64" })
+    });
+    tree.push({ path: files[i].path, mode: "100644", type: "blob", sha: blob.sha });
+  }
+  var newTree = await api(repo + "/git/trees", {
+    method: "POST",
+    body: JSON.stringify({ base_tree: headCommit.tree.sha, tree: tree })
+  });
+  var commit = await api(repo + "/git/commits", {
+    method: "POST",
+    body: JSON.stringify({ message: message, tree: newTree.sha, parents: [headSha] })
+  });
+  await api(repo + "/git/refs/heads/" + s.branch, {
+    method: "PATCH", body: JSON.stringify({ sha: commit.sha })
+  });
+  return commit.sha;
+}
+
+function textToBase64(str) { return b64encode(str); }
+
+function updateBulkDatalist() {
+  el("bulk-campaign-list").innerHTML = campaignsData.map(function (c) {
+    return "<option value=\"" + esc(c.name) + "\">";
+  }).join("");
+}
+
+el("bulk-campaign").oninput = function () {
+  var name = el("bulk-campaign").value.trim();
+  var found = campaignsData.filter(function (c) { return c.name === name; })[0];
+  var maxDay = found && found.days.length
+    ? Math.max.apply(null, found.days.map(function (d) { return d.n; })) : 0;
+  el("bulk-startday").value = maxDay + 1;
+};
+
+function computeBulkPlan() {
+  var posts = Array.prototype.slice.call(el("bulk-posts").files);
+  var stories = Array.prototype.slice.call(el("bulk-stories").files);
+  var ppd = parseInt(el("bulk-ppd").value, 10);
+  var spd = parseInt(el("bulk-spd").value, 10);
+  var startDay = Math.max(1, parseInt(el("bulk-startday").value, 10) || 1);
+  var numDays = Math.max(Math.ceil(posts.length / ppd), Math.ceil(stories.length / spd));
+  var days = [];
+  for (var i = 0; i < numDays; i++) {
+    days.push({
+      day: startDay + i,
+      posts: posts.slice(i * ppd, (i + 1) * ppd),
+      stories: stories.slice(i * spd, (i + 1) * spd)
+    });
+  }
+  return { days: days, totalPosts: posts.length, totalStories: stories.length };
+}
+
+el("bulk-plan").onclick = function () {
+  var plan = computeBulkPlan();
+  if (!plan.days.length) { el("bulk-plan-out").textContent = "Choose some images first."; return; }
+  var lines = plan.days.map(function (d) {
+    return "day" + d.day + ": " + d.posts.length + " post(s), " + d.stories.length + " story(ies)";
+  });
+  el("bulk-plan-out").textContent =
+    plan.totalPosts + " feed + " + plan.totalStories + " story image(s) -> " +
+    plan.days.length + " day(s)\n" + lines.join("\n");
+};
+
+el("bulk-upload").onclick = async function () {
+  var s = settings();
+  saveSettings();
+  var name = el("bulk-campaign").value.trim();
+  if (!name) { status("content-status", "err", "Enter a campaign name for the bulk upload."); return; }
+  if (/[\\:*?"<>|]/.test(name)) { status("content-status", "err", "Campaign name has characters GitHub can't use."); return; }
+  var plan = computeBulkPlan();
+  if (!plan.days.length) { status("content-status", "err", "Choose some images first."); return; }
+
+  status("content-status", "info", "Converting images...");
+  try {
+    var stamp = Date.now();
+    var files = [];
+    for (var i = 0; i < plan.days.length; i++) {
+      var d = plan.days[i];
+      for (var p = 0; p < d.posts.length; p++) {
+        files.push({
+          path: "content/" + name + "/day" + d.day + "/posts/bulk-" + stamp + "-" + i + "-p" + p + ".jpg",
+          base64: await fileToJpeg(d.posts[p], SQUARE, SQUARE)
+        });
+      }
+      for (var q = 0; q < d.stories.length; q++) {
+        files.push({
+          path: "content/" + name + "/day" + d.day + "/stories/bulk-" + stamp + "-" + i + "-s" + q + ".jpg",
+          base64: await fileToJpeg(d.stories[q], 1080, 1920)
+        });
+      }
+    }
+    // Register the campaign if it is new (include the updated config in the commit).
+    if (!configState.campaigns[name]) {
+      configState.campaigns[name] = { enabled: false, start_date: "",
+        posts_time_utc: "07:00", stories_time_utc: "10:00" };
+      files.push({
+        path: CAMPAIGNS_PATH,
+        base64: textToBase64(JSON.stringify({ campaigns: configState.campaigns }, null, 2) + "\n")
+      });
+    }
+    status("content-status", "info", "Uploading " + files.length + " file(s) in one commit...");
+    await bulkCommit(files, "Bulk upload " + files.length + " file(s) to " + name);
+    status("content-status", "ok",
+      "Uploaded " + plan.totalPosts + " feed + " + plan.totalStories + " story image(s) across " +
+      plan.days.length + " day(s) in " + name + ". Now set its start date and enable it.");
+    el("bulk-posts").value = ""; el("bulk-stories").value = "";
+    el("bulk-plan-out").textContent = "";
+    loadConfig().then(loadCampaigns);
+  } catch (e) {
+    status("content-status", "err", "Bulk upload failed: " + e.message);
+  }
 };
 
 el("reload-content").onclick = function () { loadConfig().then(loadCampaigns); };
