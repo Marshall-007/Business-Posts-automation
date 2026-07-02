@@ -65,8 +65,17 @@ def test_videos_captions_and_dotfiles_are_ignored(tmp_path):
     assert (posts / "clip.mp4").read_bytes() == b"not-really-video"
 
 
-def test_non_day_folders_are_skipped(tmp_path):
-    src = tmp_path / "content/misc/posts/x.webp"
-    make_image(src, (300, 300), fmt="WEBP")
+def test_posts_folder_at_any_depth_is_normalized(tmp_path):
+    # A campaign posts folder (content/<campaign>/dayN/posts) is normalized.
+    deep = tmp_path / "content/William Collins Ghost 1/day1/posts/x.webp"
+    make_image(deep, (300, 300), fmt="WEBP")
+    changed = prepare(tmp_path)
+    assert [b.name for _, b in changed] == ["x.jpg"]
+
+
+def test_images_outside_posts_or_stories_are_ignored(tmp_path):
+    # Images not inside a posts/ or stories/ folder are left untouched.
+    stray = tmp_path / "content/Campaign/day1/x.webp"
+    make_image(stray, (300, 300), fmt="WEBP")
     assert prepare(tmp_path) == []
-    assert src.exists()
+    assert stray.exists()

@@ -53,17 +53,20 @@ each one at its chosen time and then deletes the image from the repo. The queue
 lives in `data/queue.json`. This requires the repo to be **Public** so Instagram
 can fetch the images.
 
-**Content folders (hands-free posting)** — instead of uploading through the UI,
-drop images/videos into repo folders and they post themselves:
+**Content campaigns (hands-free posting)** — instead of uploading through the UI,
+create named campaign folders (each with its own start date) and drop
+images/videos in; they post themselves:
 
 ```
-content/day1/posts/     -> feed posts on the campaign start date
-content/day1/stories/   -> stories on the campaign start date
-content/day2/...        -> the next day, and so on
+content/William Collins Ghost 1/day1/posts/     -> feed posts on the campaign start date
+content/William Collins Ghost 1/day1/stories/   -> stories on the start date
+content/William Collins Ghost 1/day2/...         -> the next day, and so on
+content/Another Campaign/day1/...                -> add as many campaigns as you like
 ```
 
-Set the start date and daily times in the dashboard's *Content folders* section
-(stored in `data/campaign.json`), and enable it. Multiple files in one folder
+Add campaigns and set each one's start date and daily times in the dashboard's
+*Content campaigns* section (stored in `data/campaigns.json`), and enable each.
+Multiple files in one folder
 spread across the day automatically: 2 files post 6h apart, 3 files 4h apart,
 4+ files 3h apart. Images are converted to JPEG and sized automatically
 (`.webp`/`.png` are fine; feed 1080x1080, story 1080x1920). Captions come from a

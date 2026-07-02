@@ -1,23 +1,27 @@
-"""Scan content/dayN folders and enqueue their media into data/queue.json.
+"""Scan content campaigns and enqueue their media into data/queue.json.
 
-Folder convention (dayN counts from the campaign start date in
-data/campaign.json; day1 posts on the start date, day2 the next day, ...):
+A *campaign* is a named folder under content/ (e.g. "William Collins Ghost 1").
+Each campaign has its own start date, set in the dashboard and stored in
+data/campaigns.json. Inside a campaign, day folders drive the schedule:
 
-    content/day1/posts/    -> feed posts (images normalized to 1080x1080 JPEG)
-    content/day1/stories/  -> stories   (images normalized to 1080x1920 JPEG)
+    content/<Campaign>/day1/posts/     -> feed posts on the start date
+    content/<Campaign>/day1/stories/   -> stories on the start date
+    content/<Campaign>/day2/...        -> the next day, and so on
 
-Multiple files in one folder are spread across the day: the first goes out at
-the folder's start time and the rest follow at an interval derived from the
-file count -- 12 hours divided by the count, clamped between 3 and 6 hours.
-So 2 files post 6h apart, 3 files 4h apart, 4+ files 3h apart.
+A campaign with no dayN folders but posts/stories directly is treated as day1.
+For backwards compatibility, day folders placed directly under content/
+(content/dayN/...) form the default campaign, keyed "" in campaigns.json (or
+the legacy data/campaign.json).
 
-Captions for feed posts come from, in order: a sidecar text file with the same
-name (photo1.jpg -> photo1.txt), a caption.txt shared by the folder, or an
-auto-generated caption. Stories have no caption (Instagram ignores them).
+Multiple files in one folder are spread across the day: the first at the
+folder's start time, the rest at an interval of 12h / file-count, clamped
+between 3 and 6 hours. So 2 files post 6h apart, 3 files 4h apart, 4+ 3h apart.
 
-This runs after content_prepare (which converts .webp/.png to JPEG), so only
-JPEG/MP4/MOV files are enqueued. The queue runner then posts each item at its
-scheduled time and deletes the file. A path is never enqueued twice.
+Captions for feed posts: a sidecar text file (photo1.jpg -> photo1.txt), a
+folder caption.txt, or an auto-generated caption. Stories ignore captions.
+
+Runs after content_prepare (which converts .webp/.png to JPEG), so only
+JPEG/MP4/MOV files are enqueued. A path is never enqueued twice.
 """
 
 import json
@@ -33,13 +37,13 @@ from .queue_runner import QUEUE_FILE, load_queue, save_queue
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR_NAME = "content"
-CAMPAIGN_FILE_NAME = "campaign.json"
+CAMPAIGNS_FILE_NAME = "campaigns.json"
+LEGACY_CAMPAIGN_FILE_NAME = "campaign.json"
 
 DAY_RE = re.compile(r"(?i)^day(\d+)$")
 IMAGE_EXTS = {".jpg", ".jpeg"}
 VIDEO_EXTS = {".mp4", ".mov"}
 
-# Spread rule: 12h across the folder, each file 3-6h apart.
 DAY_SPAN_MINUTES = 720
 MIN_INTERVAL_MINUTES = 180
 MAX_INTERVAL_MINUTES = 360
@@ -50,20 +54,35 @@ KINDS = (
     ("stories", "stories_time_utc", "10:00", "story"),
 )
 
+DEFAULTS = {
+    "enabled": False,
+    "start_date": "",
+    "posts_time_utc": "07:00",
+    "stories_time_utc": "10:00",
+}
 
-def campaign_path(root: Path) -> Path:
-    return root / "data" / CAMPAIGN_FILE_NAME
 
-
-def load_campaign(root: Path) -> dict:
-    try:
-        return json.loads(campaign_path(root).read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return {}
+def load_campaign_configs(root: Path) -> dict:
+    """Return {campaign_name: config}. "" is the default (content/dayN)."""
+    data_dir = root / "data"
+    configs: dict = {}
+    campaigns_path = data_dir / CAMPAIGNS_FILE_NAME
+    if campaigns_path.is_file():
+        try:
+            configs = json.loads(campaigns_path.read_text(encoding="utf-8")).get("campaigns", {})
+        except (json.JSONDecodeError, OSError):
+            configs = {}
+    # Legacy single-campaign file seeds the default campaign if not already set.
+    legacy = data_dir / LEGACY_CAMPAIGN_FILE_NAME
+    if "" not in configs and legacy.is_file():
+        try:
+            configs[""] = json.loads(legacy.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            pass
+    return configs
 
 
 def interval_minutes(count: int) -> int:
-    """Minutes between posts in one folder, from how many files it holds."""
     if count <= 1:
         return 0
     return max(MIN_INTERVAL_MINUTES, min(MAX_INTERVAL_MINUTES, DAY_SPAN_MINUTES // count))
@@ -79,7 +98,6 @@ def parse_hhmm(value: str, fallback: str) -> time:
 
 
 def raw_base_url(root: Path) -> str:
-    """Base URL Instagram fetches media from (repo raw content at the branch)."""
     import os
     import subprocess
 
@@ -109,16 +127,33 @@ def media_files(folder: Path) -> list[Path]:
     return files
 
 
-def find_subdir(day_dir: Path, name: str) -> Path | None:
-    for sub in day_dir.iterdir():
+def find_subdir(parent: Path, name: str) -> Path | None:
+    for sub in parent.iterdir():
         if sub.is_dir() and sub.name.lower() == name:
             return sub
     return None
 
 
-def resolve_caption(
-    media: Path, folder: Path, business_config: dict, api_key: str | None, cache: dict
-) -> str:
+def campaign_days(campaign_dir: Path) -> list[tuple[int, Path]]:
+    """Return [(day_number, day_dir)]. A campaign with no dayN folders but
+    posts/stories directly is treated as a single day1."""
+    days = []
+    for d in campaign_dir.iterdir():
+        m = DAY_RE.match(d.name) if d.is_dir() else None
+        if m:
+            days.append((int(m.group(1)), d))
+    if days:
+        return sorted(days)
+    if find_subdir(campaign_dir, "posts") or find_subdir(campaign_dir, "stories"):
+        return [(1, campaign_dir)]
+    return []
+
+
+def slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "default"
+
+
+def resolve_caption(media, folder, business_config, api_key, cache) -> str:
     sidecar = media.with_suffix(".txt")
     if sidecar.is_file():
         return sidecar.read_text(encoding="utf-8").strip()
@@ -131,32 +166,72 @@ def resolve_caption(
     return cache["generated"]
 
 
-def sync(
-    root: Path | None = None,
-    now: datetime | None = None,
-    business_config: dict | None = None,
-    queue_path: Path | None = None,
-) -> list[dict]:
-    """Enqueue any new folder media. Returns the newly added queue items."""
+def _enqueue_folder(
+    folder, post_type, time_key, default_time, campaign_dir, campaign_name,
+    day_date, config, items, known_paths, root, base_url, business_config, creds, cache,
+):
+    files = media_files(folder)
+    rel_folder = str(folder.relative_to(root))
+    new_files = [f for f in files if str(f.relative_to(root)) not in known_paths]
+    if not new_files:
+        return []
+
+    existing = [
+        it for it in items
+        if (it.get("media_path") or "").startswith(rel_folder + "/")
+    ]
+    base_dt = datetime.combine(
+        day_date, parse_hhmm(config.get(time_key, ""), default_time), tzinfo=timezone.utc
+    )
+    step = timedelta(minutes=interval_minutes(len(existing) + len(new_files)))
+    if existing:
+        last = max(
+            datetime.fromisoformat(it["scheduled_at"].replace("Z", "+00:00"))
+            for it in existing
+        )
+        first_at = last + step
+    else:
+        first_at = base_dt
+
+    added = []
+    for i, media in enumerate(new_files):
+        rel = str(media.relative_to(root))
+        caption = ""
+        if post_type == "feed":
+            caption = resolve_caption(media, folder, business_config, creds.anthropic_api_key, cache)
+        item = {
+            "id": f"content_{slug(campaign_name)}_{campaign_dir.name.lower()}"
+                  f"_{post_type}_{media.stem}",
+            "source": "content",
+            "campaign": campaign_name,
+            "media_path": rel,
+            "media_url": base_url + quote(rel),
+            "post_type": post_type,
+            "is_video": media.suffix.lower() in VIDEO_EXTS,
+            "caption": caption,
+            "scheduled_at": (first_at + i * step).isoformat(timespec="seconds"),
+            "status": "pending",
+            "attempts": 0,
+        }
+        items.append(item)
+        added.append(item)
+        known_paths.add(rel)
+        print(f"queued {rel} as {post_type} for {item['scheduled_at']}")
+    return added
+
+
+def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dict]:
+    """Enqueue new media from every enabled campaign. Returns added items."""
     root = root or PROJECT_ROOT
     queue_path = queue_path or QUEUE_FILE
     now = now or datetime.now(timezone.utc)
-
-    campaign = load_campaign(root)
-    if not campaign.get("enabled"):
-        print("Content campaign is disabled; nothing to sync.")
-        return []
-    try:
-        start = date.fromisoformat(campaign.get("start_date", ""))
-    except ValueError:
-        print("Content campaign has no valid start_date; nothing to sync.", file=sys.stderr)
-        return []
 
     content_dir = root / CONTENT_DIR_NAME
     if not content_dir.is_dir():
         print("No content/ directory found.")
         return []
 
+    configs = load_campaign_configs(root)
     if business_config is None:
         business_config = load_business_config()
     creds = Credentials()
@@ -166,75 +241,39 @@ def sync(
     items = data.get("items", [])
     known_paths = {it.get("media_path") for it in items if it.get("media_path")}
 
-    day_dirs = []
-    for d in content_dir.iterdir():
-        m = DAY_RE.match(d.name) if d.is_dir() else None
-        if m:
-            day_dirs.append((int(m.group(1)), d))
-    day_dirs.sort()
+    # Enumerate campaigns: the default "" (content/dayN) plus each named folder.
+    campaigns: list[tuple[str, Path]] = []
+    if campaign_days(content_dir):
+        campaigns.append(("", content_dir))
+    for d in sorted(content_dir.iterdir()):
+        if d.is_dir() and not DAY_RE.match(d.name) and d.name.lower() not in ("posts", "stories"):
+            campaigns.append((d.name, d))
 
-    caption_cache: dict = {}
+    cache: dict = {}
     added: list[dict] = []
 
-    for day_n, day_dir in day_dirs:
-        day_date = start + timedelta(days=day_n - 1)
-        for kind, time_key, default_time, post_type in KINDS:
-            folder = find_subdir(day_dir, kind)
-            if folder is None:
-                continue
-            files = media_files(folder)
-            new_files = [
-                f for f in files
-                if str(f.relative_to(root)) not in known_paths
-            ]
-            if not new_files:
-                continue
+    for name, campaign_dir in campaigns:
+        config = {**DEFAULTS, **configs.get(name, {})}
+        if not config.get("enabled"):
+            continue
+        try:
+            start = date.fromisoformat(config.get("start_date", ""))
+        except ValueError:
+            print(f"Campaign {name or '(default)'} has no valid start_date; skipping.",
+                  file=sys.stderr)
+            continue
 
-            rel_folder = str(folder.relative_to(root))
-            existing = [
-                it for it in items
-                if (it.get("media_path") or "").startswith(rel_folder + "/")
-            ]
-            base_dt = datetime.combine(
-                day_date,
-                parse_hhmm(campaign.get(time_key, ""), default_time),
-                tzinfo=timezone.utc,
-            )
-            step = timedelta(minutes=interval_minutes(len(existing) + len(new_files)))
-            if existing:
-                last = max(
-                    datetime.fromisoformat(it["scheduled_at"].replace("Z", "+00:00"))
-                    for it in existing
+        for day_n, day_dir in campaign_days(campaign_dir):
+            day_date = start + timedelta(days=day_n - 1)
+            for kind, time_key, default_time, post_type in KINDS:
+                folder = find_subdir(day_dir, kind)
+                if folder is None:
+                    continue
+                added += _enqueue_folder(
+                    folder, post_type, time_key, default_time, day_dir, name,
+                    day_date, config, items, known_paths, root, base_url,
+                    business_config, creds, cache,
                 )
-                first_at = last + step
-            else:
-                first_at = base_dt
-
-            for i, media in enumerate(new_files):
-                rel = str(media.relative_to(root))
-                scheduled = first_at + i * step
-                caption = ""
-                if post_type == "feed":
-                    caption = resolve_caption(
-                        media, folder, business_config,
-                        creds.anthropic_api_key, caption_cache,
-                    )
-                item = {
-                    "id": f"content_{day_dir.name.lower()}_{kind}_{media.stem}",
-                    "source": "content",
-                    "media_path": rel,
-                    "media_url": base_url + quote(rel),
-                    "post_type": post_type,
-                    "is_video": media.suffix.lower() in VIDEO_EXTS,
-                    "caption": caption,
-                    "scheduled_at": scheduled.isoformat(timespec="seconds"),
-                    "status": "pending",
-                    "attempts": 0,
-                }
-                items.append(item)
-                added.append(item)
-                known_paths.add(rel)
-                print(f"queued {rel} as {post_type} for {item['scheduled_at']}")
 
     if added:
         data["items"] = items

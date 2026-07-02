@@ -1,24 +1,34 @@
-# Content folders — hands-free posting
+# Content campaigns — hands-free posting
 
 Drop images or videos into these folders and they post to Instagram
 automatically. No dashboard uploading needed.
 
 ## Structure
 
+Each **campaign** is a named folder with its own start date. Add as many as you
+like:
+
 ```
 content/
-  day1/
-    posts/      -> feed posts   (day 1 of the campaign)
-    stories/    -> stories      (day 1)
-  day2/
-    posts/
-    stories/
-  ...
+  William Collins Ghost 1/     <- a campaign (its own start date)
+    day1/
+      posts/      -> feed posts on the start date
+      stories/    -> stories on the start date
+    day2/
+      posts/
+      stories/
+  Another Campaign/            <- add more campaigns any time
+    day1/
+      ...
 ```
 
-- **day1** posts on the campaign **start date** (set in the dashboard under
-  *Content folders*, stored in `data/campaign.json`). day2 is the next day,
-  day3 the day after, and so on.
+- Set each campaign's **start date** and daily times in the dashboard under
+  *Content campaigns* (stored in `data/campaigns.json`). day1 posts on that
+  campaign's start date, day2 the next day, and so on.
+- A campaign with no dayN folders but `posts/`/`stories/` directly is treated
+  as day1.
+- Day folders placed directly under `content/` (`content/day1/...`) form a
+  default unnamed campaign, for backwards compatibility.
 - **posts/** files become feed posts (videos become Reels).
 - **stories/** files become stories (captions are ignored — Instagram does not
   support them on stories).

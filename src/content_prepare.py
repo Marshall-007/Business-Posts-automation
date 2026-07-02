@@ -71,39 +71,38 @@ def normalize_image(src: Path, size: tuple[int, int]) -> Path | None:
 
 
 def prepare(root: Path | None = None) -> list[tuple[Path, Path]]:
-    """Normalize every image under content/. Returns [(old, new), ...]."""
+    """Normalize every image under any posts/ or stories/ folder in content/,
+    at any nesting depth (content/dayN/... or content/<campaign>/dayN/...).
+    Returns [(old, new), ...]."""
     root = root or PROJECT_ROOT
     content = root / CONTENT_DIR_NAME
     changed: list[tuple[Path, Path]] = []
     if not content.is_dir():
         return changed
 
-    for day_dir in sorted(content.iterdir()):
-        if not day_dir.is_dir() or not DAY_RE.match(day_dir.name):
+    for folder in content.rglob("*"):
+        if not folder.is_dir():
             continue
-        for sub in day_dir.iterdir():
-            if not sub.is_dir():
+        kind = folder.name.lower()
+        if kind == "posts":
+            size = POSTS_SIZE
+        elif kind == "stories":
+            size = STORIES_SIZE
+        else:
+            continue
+        for f in sorted(folder.iterdir()):
+            if not f.is_file() or f.name.startswith("."):
                 continue
-            kind = sub.name.lower()
-            if kind == "posts":
-                size = POSTS_SIZE
-            elif kind == "stories":
-                size = STORIES_SIZE
-            else:
+            if f.suffix.lower() not in IMAGE_EXTS:
                 continue
-            for f in sorted(sub.iterdir()):
-                if not f.is_file() or f.name.startswith("."):
-                    continue
-                if f.suffix.lower() not in IMAGE_EXTS:
-                    continue
-                try:
-                    dest = normalize_image(f, size)
-                except Exception as exc:  # corrupt/unreadable image
-                    print(f"[warn] could not normalize {f}: {exc}", file=sys.stderr)
-                    continue
-                if dest is not None:
-                    changed.append((f, dest))
-                    print(f"normalized {f.relative_to(root)} -> {dest.name}")
+            try:
+                dest = normalize_image(f, size)
+            except Exception as exc:  # corrupt/unreadable image
+                print(f"[warn] could not normalize {f}: {exc}", file=sys.stderr)
+                continue
+            if dest is not None:
+                changed.append((f, dest))
+                print(f"normalized {f.relative_to(root)} -> {dest.name}")
     return changed
 
 
