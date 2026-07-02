@@ -64,20 +64,27 @@ def main() -> int:
     changed = False
     for item in due:
         media_url = item.get("media_url") or item.get("image_url")
-        media_type = item.get("media_type") or "IMAGE"
         media_path = item.get("media_path") or item.get("image_path")
+        # post_type: "feed" or "story"; is_video: True for MP4/MOV.
+        post_type = item.get("post_type")
+        is_video = item.get("is_video")
+        if post_type is None:  # legacy items used media_type IMAGE/REELS
+            post_type = "feed"
+        if is_video is None:
+            is_video = item.get("media_type") == "REELS"
         # is_configured() checks for image_urls; give it the item's URL.
         ig = Instagram(creds, {**business_config, "image_urls": [media_url]})
         if not ig.is_configured():
             print("Instagram is not configured (missing secrets). Skipping.", file=sys.stderr)
             break
         try:
-            post_id = ig.publish_media(item["caption"], media_url, media_type)
+            post_id = ig.publish_media(item["caption"], media_url, post_type, is_video)
             item["status"] = "posted"
             item["post_id"] = post_id
             item["posted_at"] = now.isoformat(timespec="seconds")
             changed = True
-            print(f"[ok] posted {item['id']} ({media_type}, post id {post_id})")
+            kind = "story" if post_type == "story" else ("reel" if is_video else "image")
+            print(f"[ok] posted {item['id']} ({kind}, post id {post_id})")
 
             # Remove the media from the repo now that it is published.
             media = PROJECT_ROOT / media_path if media_path else None

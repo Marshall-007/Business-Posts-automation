@@ -130,12 +130,12 @@
 
   <section id="schedule">
     <h2>Schedule Instagram posts</h2>
-    <p class="note">Add up to three images or videos with captions and a day/time
-      for each. Media is uploaded to your repo, posted to Instagram at the chosen
-      time, then removed. Images are squared to 1080x1080 with white padding.
-      Videos are posted as Reels (MP4/MOV; keep them under 40 MB for reliable
-      GitHub hosting). Requires the repo to be Public so Instagram can fetch the
-      media.</p>
+    <p class="note">Add up to three images or videos with a day/time for each,
+      and choose Feed or Story. Media is uploaded to your repo, posted at the
+      chosen time, then removed. Feed images are squared to 1080x1080; Story
+      images are sized to 1080x1920. Feed videos post as Reels; Story videos
+      post as Stories (MP4/MOV, under 40 MB). Stories vanish after 24 hours and
+      ignore the caption. Requires the repo to be Public.</p>
     <div id="slots"></div>
     <div class="btnrow">
       <button id="schedule-all">Schedule these posts</button>
@@ -487,6 +487,8 @@ function buildSlots() {
       "<div class='row'>" +
       "<div><label>Image or video</label>" +
       "<input type='file' accept='image/*,video/*' class='slot-file' data-i='" + i + "'></div>" +
+      "<div><label>Post as</label><select class='slot-type' data-i='" + i + "'>" +
+      "<option value='feed'>Feed post</option><option value='story'>Story</option></select></div>" +
       "<div><label>Date</label><input type='date' class='slot-date' data-i='" + i + "'></div>" +
       "<div><label>Time (your local time)</label><input type='time' class='slot-time' data-i='" + i + "'></div>" +
       "</div>" +
@@ -514,20 +516,20 @@ function readFileBase64(file) {
   });
 }
 
-function fileToSquareJpeg(file) {
+function fileToJpeg(file, outW, outH) {
   return new Promise(function (resolve, reject) {
     var img = new Image();
     var url = URL.createObjectURL(file);
     img.onload = function () {
       URL.revokeObjectURL(url);
       var canvas = document.createElement("canvas");
-      canvas.width = SQUARE; canvas.height = SQUARE;
+      canvas.width = outW; canvas.height = outH;
       var ctx = canvas.getContext("2d");
       ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, SQUARE, SQUARE);
-      var scale = Math.min(SQUARE / img.width, SQUARE / img.height);
+      ctx.fillRect(0, 0, outW, outH);
+      var scale = Math.min(outW / img.width, outH / img.height);
       var w = img.width * scale, h = img.height * scale;
-      ctx.drawImage(img, (SQUARE - w) / 2, (SQUARE - h) / 2, w, h);
+      ctx.drawImage(img, (outW - w) / 2, (outH - h) / 2, w, h);
       resolve(canvas.toDataURL("image/jpeg", 0.9).split(",")[1]);
     };
     img.onerror = function () { reject(new Error("Could not read image")); };
@@ -551,6 +553,7 @@ el("schedule-all").onclick = async function () {
   var slots = [];
   for (var i = 0; i < SLOT_COUNT; i++) {
     var file = document.querySelector(".slot-file[data-i='" + i + "']").files[0];
+    var type = document.querySelector(".slot-type[data-i='" + i + "']").value;
     var date = document.querySelector(".slot-date[data-i='" + i + "']").value;
     var time = document.querySelector(".slot-time[data-i='" + i + "']").value;
     var caption = document.querySelector(".slot-caption[data-i='" + i + "']").value;
@@ -559,7 +562,7 @@ el("schedule-all").onclick = async function () {
       status("schedule-status", "err", "Image " + (i + 1) + ": need a file, a date and a time.");
       return;
     }
-    slots.push({ file: file, date: date, time: time, caption: caption });
+    slots.push({ file: file, postType: type, date: date, time: time, caption: caption });
   }
   if (!slots.length) { status("schedule-status", "err", "Fill in at least one image."); return; }
 
@@ -569,7 +572,7 @@ el("schedule-all").onclick = async function () {
     for (var j = 0; j < slots.length; j++) {
       var sl = slots[j];
       var isVideo = sl.file.type.indexOf("video") === 0;
-      var b64, ext, mediaType;
+      var b64, ext;
       if (isVideo) {
         if (sl.file.size > MAX_VIDEO_MB * 1024 * 1024) {
           throw new Error("Video is over " + MAX_VIDEO_MB + " MB. Use a smaller file or a media host.");
@@ -577,11 +580,11 @@ el("schedule-all").onclick = async function () {
         b64 = await readFileBase64(sl.file);
         ext = (sl.file.name.split(".").pop() || "mp4").toLowerCase();
         if (ext !== "mp4" && ext !== "mov") ext = "mp4";
-        mediaType = "REELS";
       } else {
-        b64 = await fileToSquareJpeg(sl.file);
+        // Feed images are square; Story images are 9:16 portrait.
+        if (sl.postType === "story") b64 = await fileToJpeg(sl.file, 1080, 1920);
+        else b64 = await fileToJpeg(sl.file, SQUARE, SQUARE);
         ext = "jpg";
-        mediaType = "IMAGE";
       }
       var id = "post_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
       var path = UPLOAD_DIR + "/" + id + "." + ext;
@@ -591,7 +594,8 @@ el("schedule-all").onclick = async function () {
         "/" + commitSha + "/" + path;
       var scheduledAt = new Date(sl.date + "T" + sl.time).toISOString();
       queueState.items.push({
-        id: id, media_path: path, media_url: mediaUrl, media_type: mediaType,
+        id: id, media_path: path, media_url: mediaUrl,
+        post_type: sl.postType, is_video: isVideo,
         caption: sl.caption, scheduled_at: scheduledAt,
         status: "pending", attempts: 0
       });
@@ -642,7 +646,7 @@ function renderQueue() {
     var when = new Date(it.scheduled_at).toLocaleString();
     var cls = it.status === "posted" ? "ok" : (it.status === "error" ? "err" : "run");
     var cap = it.caption ? esc(it.caption.slice(0, 70)) : "(no caption)";
-    var type = (it.media_type === "REELS") ? "video" : "image";
+    var type = (it.post_type === "story") ? "story" : (it.is_video ? "reel" : "image");
     var cancel = it.status === "pending"
       ? "<button class='danger' data-cancel='" + esc(it.id) + "'>Cancel</button>" : "";
     return "<tr><td>" + esc(type) + "</td><td>" + cap + "</td><td>" + esc(when) + "</td>" +
