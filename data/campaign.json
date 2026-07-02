@@ -1,6 +1,6 @@
 {
-  "enabled": false,
-  "start_date": "",
+  "enabled": true,
+  "start_date": "2026-07-04",
   "posts_time_utc": "07:00",
   "stories_time_utc": "10:00"
 }
