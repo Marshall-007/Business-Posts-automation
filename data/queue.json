@@ -72,6 +72,18 @@
       "post_id": "18102970513877814",
       "posted_at": "2026-07-03T04:34:18+00:00",
       "fb_post_id": "1172085925986334_122112758517359188"
+    },
+    {
+      "id": "fbstory_1783053810",
+      "source": "manual-test",
+      "media_path": "docs/uploads/fbstory-1783053810.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude/account-setup-config-569zpw/docs/uploads/fbstory-1783053810.jpg",
+      "post_type": "story",
+      "is_video": false,
+      "caption": "",
+      "scheduled_at": "2026-07-03T04:42:30+00:00",
+      "status": "pending",
+      "attempts": 0
     }
   ]
 }

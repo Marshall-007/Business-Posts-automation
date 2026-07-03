@@ -90,9 +90,11 @@ details.
 **Facebook cross-posting** — set the `FACEBOOK_PAGE_ID` and
 `FACEBOOK_PAGE_ACCESS_TOKEN` secrets (see **[SETUP.md](SETUP.md)** §3) and
 **every** item posted to Instagram is automatically mirrored to your Facebook
-Page: feed photos as Page photos, Reels as Page videos, stories as Page posts.
-It is best-effort — a Facebook error is recorded on the queue item but never
-blocks Instagram.
+Page in its matching format: feed photos as Page photos, Reels as Page videos,
+and Instagram Stories as real **Facebook Page Stories** (they appear in the
+Page's Stories ring and expire after 24 hours, exactly like Instagram). It is
+best-effort — a Facebook error is recorded on the queue item but never blocks
+Instagram.
 
 **Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
 *Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many

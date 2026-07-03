@@ -73,18 +73,60 @@ def test_video_post_hits_videos_endpoint(fb_env, monkeypatch):
     assert calls["data"]["description"] == "Reel caption"
 
 
-def test_story_is_cross_posted_as_a_photo(fb_env, monkeypatch):
-    calls = {}
+def test_photo_story_uploads_unpublished_then_posts_photo_story(fb_env, monkeypatch):
+    calls = []
 
-    def fake_post(url, data=None, timeout=None):
-        calls["url"] = url
-        return FakeResp({"id": "p", "post_id": "PAGE123_10"})
+    def fake_post(url, data=None, headers=None, timeout=None):
+        calls.append({"url": url, "data": dict(data or {}), "headers": headers})
+        if url.endswith("/PAGE123/photos"):
+            return FakeResp({"id": "photo_77"})
+        if url.endswith("/PAGE123/photo_stories"):
+            return FakeResp({"success": True, "post_id": "PAGE123_STORY_5"})
+        raise AssertionError(f"unexpected URL {url}")
 
     monkeypatch.setattr("src.platforms.facebook.requests.post", fake_post)
-    fb = make_fb()
 
-    fb.publish_media("", "https://raw/story.jpg", "story", False)
-    assert calls["url"].endswith("/PAGE123/photos")
+    pid = make_fb().publish_media("", "https://raw/story.jpg", "story", False)
+
+    assert pid == "PAGE123_STORY_5"
+    assert calls[0]["url"].endswith("/PAGE123/photos")
+    assert calls[0]["data"]["published"] == "false"     # unpublished first
+    assert calls[0]["data"]["url"] == "https://raw/story.jpg"
+    assert calls[1]["url"].endswith("/PAGE123/photo_stories")
+    assert calls[1]["data"]["photo_id"] == "photo_77"
+
+
+def test_video_story_runs_the_three_step_upload(fb_env, monkeypatch):
+    calls = []
+    UPLOAD_URL = "https://rupload.facebook.com/video-upload/v21.0/vid_99"
+
+    def fake_post(url, data=None, headers=None, timeout=None):
+        calls.append({"url": url, "data": dict(data or {}), "headers": headers})
+        if url.endswith("/PAGE123/video_stories") and (data or {}).get("upload_phase") == "start":
+            return FakeResp({"video_id": "vid_99", "upload_url": UPLOAD_URL})
+        if url == UPLOAD_URL:
+            return FakeResp({"success": True})
+        if url.endswith("/PAGE123/video_stories") and (data or {}).get("upload_phase") == "finish":
+            return FakeResp({"post_id": "PAGE123_STORY_6"})
+        raise AssertionError(f"unexpected URL {url} / data {data}")
+
+    monkeypatch.setattr("src.platforms.facebook.requests.post", fake_post)
+
+    pid = make_fb().publish_media("", "https://raw/story.mp4", "story", True)
+
+    assert pid == "PAGE123_STORY_6"
+    assert [c["url"] for c in calls] == [
+        f"{'https://graph.facebook.com/v21.0'}/PAGE123/video_stories",
+        UPLOAD_URL,
+        f"{'https://graph.facebook.com/v21.0'}/PAGE123/video_stories",
+    ]
+    # Upload step must forward the public URL and Page token as headers.
+    assert calls[1]["headers"]["file_url"] == "https://raw/story.mp4"
+    assert calls[1]["headers"]["Authorization"] == "OAuth EAAtoken"
+    # Finish step publishes the video.
+    assert calls[2]["data"]["upload_phase"] == "finish"
+    assert calls[2]["data"]["video_id"] == "vid_99"
+    assert calls[2]["data"]["video_state"] == "PUBLISHED"
 
 
 def test_text_publish_hits_feed_endpoint(fb_env, monkeypatch):
