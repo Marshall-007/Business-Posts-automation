@@ -97,8 +97,11 @@
       "is_video": false,
       "caption": "",
       "scheduled_at": "2026-07-03T04:45:54+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18153989716489632",
+      "posted_at": "2026-07-03T04:47:14+00:00",
+      "fb_post_id": "1332717038404735"
     }
   ]
 }
