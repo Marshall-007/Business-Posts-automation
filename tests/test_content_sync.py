@@ -109,7 +109,7 @@ def test_month_batches_post_independently(tmp_path, ig_env, business_config):
     # unchecked months stay silent.
     qp = write_campaigns(tmp_path, {"WC": {
         **CFG,
-        "platforms": ["instagram", "facebook", "tiktok"],
+        "platforms": ["instagram", "facebook"],
         "batches": {
             "Month 1": {"enabled": True, "start_date": "2026-07-10",
                          "platforms": ["instagram", "facebook"]},
@@ -140,7 +140,7 @@ def test_month_batches_post_independently(tmp_path, ig_env, business_config):
     more = run(tmp_path, qp, business_config)
     assert len(more) == 1
     assert more[0]["scheduled_at"].startswith("2026-08-10")
-    assert more[0]["platforms"] == ["instagram", "facebook", "tiktok"]  # default
+    assert more[0]["platforms"] == ["instagram", "facebook"]  # default
 
 
 def test_batches_ignore_campaign_level_enabled_switch(tmp_path, ig_env, business_config):

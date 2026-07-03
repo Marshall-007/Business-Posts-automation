@@ -30,7 +30,6 @@ from .config import Credentials, load_business_config
 from .platforms.base import PostError
 from .platforms.facebook import Facebook
 from .platforms.instagram import Instagram
-from .platforms.tiktok import TikTok
 
 QUEUE_FILE = Path(__file__).resolve().parent.parent / "data" / "queue.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -142,8 +141,6 @@ def process_due(
     business_config = load_business_config()
     facebook = Facebook(creds, business_config)
     fb_ready = facebook.is_configured()
-    tiktok = TikTok(creds, business_config)
-    tt_ready = tiktok.is_configured()
     changed = False
 
     for item in due:
@@ -159,18 +156,16 @@ def process_due(
 
         # Platform routing: the item carries the platforms its month/batch was
         # configured for; older items without the field go everywhere.
-        selected = item.get("platforms") or ["instagram", "facebook", "tiktok"]
+        selected = item.get("platforms") or ["instagram", "facebook"]
 
         # is_configured() checks for image_urls; give it the item's URL.
         ig = Instagram(creds, {**business_config, "image_urls": [media_url]})
         ready = {
             "instagram": "instagram" in selected and ig.is_configured(),
             "facebook": "facebook" in selected and fb_ready,
-            # TikTok has no Stories API.
-            "tiktok": "tiktok" in selected and tt_ready and post_type != "story",
         }
         # The primary platform drives status/retries; the rest are best-effort.
-        primary = next((p for p in ("instagram", "facebook", "tiktok") if ready[p]), None)
+        primary = next((p for p in ("instagram", "facebook") if ready[p]), None)
         if primary is None:
             print(f"[skip] {item['id']}: none of {selected} is configured "
                   "(or can take this post type).", file=sys.stderr)
@@ -180,15 +175,10 @@ def process_due(
             caption = item.get("caption", "")
             if platform == "instagram":
                 return ig.publish_media(caption, media_url, post_type, is_video)
-            if platform == "facebook":
-                return facebook.publish_media(caption, media_url, post_type, is_video)
-            local = str(root / media_path) if media_path else None
-            return tiktok.publish_media(caption, media_url, post_type, is_video, local)
+            return facebook.publish_media(caption, media_url, post_type, is_video)
 
-        ID_FIELD = {"instagram": "ig_post_id", "facebook": "fb_post_id",
-                    "tiktok": "tiktok_publish_id"}
-        ERR_FIELD = {"instagram": "ig_error", "facebook": "fb_error",
-                     "tiktok": "tiktok_error"}
+        ID_FIELD = {"instagram": "ig_post_id", "facebook": "fb_post_id"}
+        ERR_FIELD = {"instagram": "ig_error", "facebook": "fb_error"}
         kind = "story" if post_type == "story" else ("reel" if is_video else "image")
 
         def record(platform: str, ok: bool, detail: str) -> None:
@@ -214,7 +204,7 @@ def process_due(
             # Mirror to the other selected platforms (best effort: a mirror
             # failure must not block the primary post or re-trigger a retry).
             # Done before the file is deleted so they can still fetch the URL.
-            for platform in ("instagram", "facebook", "tiktok"):
+            for platform in ("instagram", "facebook"):
                 if platform == primary or not ready[platform]:
                     continue
                 try:

@@ -10,7 +10,6 @@ import src.queue_runner as qr
 from src.platforms.base import PostError
 from src.platforms.facebook import Facebook
 from src.platforms.instagram import Instagram
-from src.platforms.tiktok import TikTok
 
 NOW = datetime(2026, 7, 10, 12, 0, tzinfo=timezone.utc)
 
@@ -178,62 +177,11 @@ def fb_env(monkeypatch):
     monkeypatch.setenv("FACEBOOK_PAGE_ACCESS_TOKEN", "EAAtoken")
 
 
-@pytest.fixture
-def tt_env(monkeypatch):
-    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck")
-    monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
-    monkeypatch.setenv("TIKTOK_ACCESS_TOKEN", "at_live")
-
-
-def test_tiktok_gets_feed_items_but_not_stories(
-        tmp_path, ig_env, tt_env, fake_publish, monkeypatch):
-    tt_calls = []
-
-    def tt_pub(self, caption, url, post_type="feed", is_video=False, media_path=None):
-        tt_calls.append({"post_type": post_type, "is_video": is_video, "path": media_path})
-        return "tt_777"
-
-    monkeypatch.setattr(TikTok, "publish_media", tt_pub)
-    qp = tmp_path / "data/queue.json"
-    write_queue(qp, [
-        item(tmp_path, id="feed", media_path="docs/uploads/a.jpg"),
-        item(tmp_path, id="story", post_type="story", media_path="docs/uploads/s.jpg"),
-    ])
-
-    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
-
-    # Only the feed item is sent to TikTok; the story is skipped there.
-    assert len(tt_calls) == 1
-    assert tt_calls[0]["post_type"] == "feed"
-    assert tt_calls[0]["path"].endswith("docs/uploads/a.jpg")   # local path for byte upload
-    feed = next(it for it in items if it["id"] == "feed")
-    story = next(it for it in items if it["id"] == "story")
-    assert feed["tiktok_publish_id"] == "tt_777"
-    assert "tiktok_publish_id" not in story
-    assert all(it["status"] == "posted" for it in items)
-
-
-def test_tiktok_failure_does_not_block_instagram(
-        tmp_path, ig_env, tt_env, fake_publish, monkeypatch):
-    monkeypatch.setattr(TikTok, "publish_media",
-                        lambda self, *a, **k: (_ for _ in ()).throw(PostError("tt down")))
-    qp = tmp_path / "data/queue.json"
-    write_queue(qp, [item(tmp_path)])
-
-    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
-
-    assert items[0]["status"] == "posted"
-    assert items[0]["tiktok_error"] == "tt down"
-    assert not (tmp_path / "docs/uploads/a.jpg").exists()
-
-
-def test_platforms_list_routes_the_post(tmp_path, ig_env, fb_env, tt_env,
+def test_platforms_list_routes_the_post(tmp_path, ig_env, fb_env,
                                          fake_publish, monkeypatch):
-    fb_calls, tt_calls = [], []
+    fb_calls = []
     monkeypatch.setattr(Facebook, "publish_media",
                         lambda self, *a, **k: fb_calls.append(a) or "fb_1")
-    monkeypatch.setattr(TikTok, "publish_media",
-                        lambda self, *a, **k: tt_calls.append(a) or "tt_1")
     qp = tmp_path / "data/queue.json"
     write_queue(qp, [
         item(tmp_path, id="ig_fb", media_path="docs/uploads/a.jpg",
@@ -246,7 +194,6 @@ def test_platforms_list_routes_the_post(tmp_path, ig_env, fb_env, tt_env,
 
     assert len(fake_publish) == 2                 # both went to Instagram
     assert len(fb_calls) == 1                     # only ig_fb mirrored to FB
-    assert tt_calls == []                         # tiktok never selected
     by = {it["id"]: it for it in items}
     assert by["ig_fb"]["fb_post_id"] == "fb_1"
     assert "fb_post_id" not in by["ig_only"]
@@ -267,20 +214,6 @@ def test_facebook_becomes_primary_when_instagram_not_selected(
     assert items[0]["post_id"] == "fb_primary_9"
     assert items[0]["fb_post_id"] == "fb_primary_9"
     assert not (tmp_path / "docs/uploads/a.jpg").exists()   # media cleaned up
-
-
-def test_no_tiktok_when_unconfigured(tmp_path, ig_env, fake_publish, monkeypatch):
-    for k in ("TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET",
-              "TIKTOK_REFRESH_TOKEN", "TIKTOK_ACCESS_TOKEN"):
-        monkeypatch.delenv(k, raising=False)
-    called = []
-    monkeypatch.setattr(TikTok, "publish_media", lambda self, *a, **k: called.append(1))
-    qp = tmp_path / "data/queue.json"
-    write_queue(qp, [item(tmp_path)])
-
-    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
-    assert called == []
-    assert "tiktok_publish_id" not in items[0] and "tiktok_error" not in items[0]
 
 
 def test_configured_facebook_gets_every_item_cross_posted(

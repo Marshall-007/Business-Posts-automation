@@ -77,7 +77,7 @@ DEFAULTS = {
     "stories_time_utc": "10:00",
 }
 
-ALL_PLATFORMS = ["instagram", "facebook", "tiktok"]
+ALL_PLATFORMS = ["instagram", "facebook"]
 
 
 def batch_key_for(day_dir: Path, campaign_dir: Path) -> str:

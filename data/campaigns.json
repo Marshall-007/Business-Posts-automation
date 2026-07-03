@@ -7,8 +7,7 @@
       "stories_time_utc": "10:00",
       "platforms": [
         "instagram",
-        "facebook",
-        "tiktok"
+        "facebook"
       ],
       "batches": {
         "Month 1": {
@@ -28,8 +27,7 @@
       "stories_time_utc": "10:00",
       "platforms": [
         "instagram",
-        "facebook",
-        "tiktok"
+        "facebook"
       ],
       "batches": {
         "": {
@@ -37,8 +35,7 @@
           "start_date": "",
           "platforms": [
             "instagram",
-            "facebook",
-            "tiktok"
+            "facebook"
           ]
         }
       }

@@ -110,54 +110,6 @@ running a live cross-post test on GitHub Actions.
    it refreshes weekly on its own and you never touch the token again.
 5. Instagram requires an image for every post — add public image URLs to `image_urls` in `config.yaml`; the system rotates through them.
 
-## 4b. TikTok (cross-posts feed items from Instagram)
-
-When these secrets are set, every **feed** item posted to Instagram is also
-posted to TikTok — photos as TikTok photo posts, videos as TikTok videos.
-(TikTok has no public Stories API, so Instagram stories are not sent to TikTok.)
-
-| Secret name | Value |
-|---|---|
-| `TIKTOK_CLIENT_KEY` | Your TikTok app's client key |
-| `TIKTOK_CLIENT_SECRET` | Your TikTok app's client secret |
-| `TIKTOK_REFRESH_TOKEN` | OAuth refresh token (durable, ~1 year) |
-| `TIKTOK_ACCESS_TOKEN` | *(auto-filled by the refresh workflow — leave blank at first)* |
-| `TIKTOK_PRIVACY_LEVEL` | `SELF_ONLY` while unaudited; `PUBLIC_TO_EVERYONE` after review |
-| `GH_PAT` | The same fine-grained PAT (Secrets: read/write) used for Instagram |
-
-**Two things to know up front:**
-- **App review:** until TikTok approves your app for the Content Posting API,
-  posts are forced to **private (SELF_ONLY)** — only you can see them. Public
-  auto-posting turns on once TikTok approves the app and you set
-  `TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE`.
-- **Tokens expire in 24h.** The `Refresh social tokens` workflow refreshes the
-  TikTok access token every 4 hours and stores it (and the rotated refresh
-  token) automatically, so posting never breaks.
-
-**Steps:**
-1. Register at https://developers.tiktok.com → **Manage apps → Connect an app**.
-   Under **App settings**, note the **Client key** and **Client secret**.
-2. Add the **Content Posting API** product (choose **Direct Post**) and the
-   **Login Kit**. Request the scopes `video.publish`, `video.upload`, and
-   `user.info.basic`.
-3. Complete the OAuth login flow as the Gwalava TikTok account (the developer
-   portal's *Login Kit* / OAuth playground works) to receive an **access token**
-   and a **refresh token**. Save the **refresh token** as `TIKTOK_REFRESH_TOKEN`,
-   and the client key/secret as the secrets above.
-4. Run **Actions → Refresh social tokens → Run workflow** once — it mints and
-   stores `TIKTOK_ACCESS_TOKEN`. From then on it refreshes every 4 hours.
-5. **Photo posts** need the media domain verified: in the TikTok developer
-   portal under **App settings → URL properties**, add and verify the domain
-   your images are served from. (I can point this at a domain you control and
-   walk you through it when you get there. Videos need no verification.)
-6. **Start app review** in the portal (you'll need a privacy-policy URL — your
-   site works: https://marshall-007.github.io/Gwalava-Boards/) so posts can go
-   public. Until then, keep `TIKTOK_PRIVACY_LEVEL=SELF_ONLY` and posts stay
-   private for testing.
-
-Paste me the client key, client secret, and refresh token (or add them as
-secrets yourself) and I will run a live private test on GitHub Actions.
-
 ## 5. LinkedIn
 
 | Secret name | Value |

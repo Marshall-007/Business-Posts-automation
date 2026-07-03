@@ -43,15 +43,6 @@ class Credentials:
         # long-lived (60-day) one at post time.
         self.instagram_app_secret = env("INSTAGRAM_APP_SECRET")
 
-        # TikTok Content Posting API. The refresh token (valid ~1 year) is the
-        # durable secret; a fresh 24h access token is minted from it each run.
-        self.tiktok_client_key = env("TIKTOK_CLIENT_KEY")
-        self.tiktok_client_secret = env("TIKTOK_CLIENT_SECRET")
-        self.tiktok_refresh_token = env("TIKTOK_REFRESH_TOKEN")
-        self.tiktok_access_token = env("TIKTOK_ACCESS_TOKEN")
-        # SELF_ONLY until the app passes TikTok review; then PUBLIC_TO_EVERYONE.
-        self.tiktok_privacy_level = env("TIKTOK_PRIVACY_LEVEL") or "SELF_ONLY"
-
         self.linkedin_access_token = env("LINKEDIN_ACCESS_TOKEN")
         self.linkedin_author_urn = env("LINKEDIN_AUTHOR_URN")
 

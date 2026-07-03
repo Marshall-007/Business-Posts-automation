@@ -16,8 +16,8 @@ recent runs), **Companies** (switch between clients, guided setup),
 and **Settings** (connection). Highlights:
 
 - One-off post scheduling was removed; Auto Posts campaigns are the way to post.
-- Only Instagram and Facebook show in the UI; TikTok stays wired in the
-  backend with secret placeholders for later.
+- The platform lineup is Instagram and Facebook. TikTok was removed
+  entirely (code, workflows, secrets and docs) at the owner's request.
 - Every publish attempt (feed and stories, success or failure with the full
   API error) is written to `data/activity.json` and shown on the Dashboard.
 - **Guided setup wizard** per company: modal steps with Next/Back and
@@ -43,25 +43,18 @@ and **Settings** (connection). Highlights:
 | Contact number + website in every caption | WORKING | 0813471724 + Gwalava site |
 | Month-level batches: checkbox, start date, platforms per month | BUILT | engine + dashboard + tests |
 | Bulk upload sorted into a chosen/new month | BUILT | dashboard |
-| Platform selection per month (Instagram/Facebook/TikTok) | BUILT | queue routes per item |
+| Platform selection per month (Instagram/Facebook) | BUILT | queue routes per item |
 | Mobile view | BUILT | responsive under 700px |
 | Admin portal (multi-company) | BUILT | docs/admin.html |
 | Safety: 20 posts / 24h cap, past-date guard, retries | BUILT | tests cover all three |
 | Test suite | GREEN | 75+ tests, CI on every push |
 
-## In progress
-
-| Area | Where it stands | Next step |
-|---|---|---|
-| TikTok posting | Code complete (photos, videos, token auto-refresh every 4h). App created, URL verified, sandbox credentials issued. Blocked on the sandbox target-user step. | In the TikTok developer portal: Sandbox settings -> Target users -> add `gwalavaboardsandfurnitur`, then re-run the authorize link and the "TikTok authorize (one-time)" workflow. |
-| TikTok public posting | Sandbox posts are private (SELF_ONLY) until TikTok approves the app. | Record a demo video of the flow and submit for review; then set TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE. |
 
 ## To do (user actions, not code)
 
 - [ ] Set a start date, platforms, and tick Month 1 of "William Collins Ghost 1", then Save - posting begins.
-- [ ] TikTok: finish the sandbox target-user step above.
 - [ ] Confirm GitHub Pages is serving /docs on the default branch (dashboard + admin portal + privacy/terms pages).
-- [ ] Rotate the TikTok sandbox client secret after testing (it appeared in a screenshot).
+- [ ] In the TikTok developer portal, delete the unused "Gwalava Poster" app (TikTok support was removed).
 
 ## To do (future improvements)
 
@@ -72,13 +65,13 @@ and **Settings** (connection). Highlights:
 
 ## How a new client is onboarded (repeatable)
 
-1. Open the **Admin portal** (docs/admin.html) -> "Set up a new company".
+1. Open the dashboard's **Admin** section -> "Add Company".
 2. Fill in the business name, description, phone, website; it creates their
-   repo from this one as a template, personalizes config.yaml, and clears
-   starter data.
-3. Work through the card's **setup checklist**: platform secrets
-   (Instagram/Facebook/TikTok tokens), GH_PAT, then Settings -> Pages ->
-   deploy branch /docs.
+   repo (default branch main), personalizes config.yaml, and clears starter
+   data.
+3. On the company's card (Companies section) run the **Guided setup**
+   wizard: GitHub token, Facebook Page (permanent token), Instagram
+   (long-lived token), then GitHub Pages - each step verifies itself.
 4. Upload their content with **Bulk upload** into Month 1, set the month's
    date + platforms, tick it, Save. Done - it runs itself.
 
@@ -92,8 +85,8 @@ and **Settings** (connection). Highlights:
 | src/queue_runner.py | Posts due items to the selected platforms |
 | src/captions.py | Randomized captions; per-company overrides in config.yaml |
 | src/content_prepare.py | Converts/resizes images for Instagram |
-| src/platforms/ | Instagram, Facebook, TikTok (and text-only others) |
+| src/platforms/ | Instagram and Facebook (and text-only others) |
 | .github/workflows/scheduler.yml | Runs the pipeline every 15 minutes |
-| .github/workflows/refresh-token.yml | Keeps Instagram + TikTok tokens fresh |
+| .github/workflows/refresh-token.yml | Keeps the Instagram token fresh |
 | data/campaigns.json | Month batches: enabled/date/platforms per month |
 | data/queue.json | The posting queue (visible in the dashboard) |
