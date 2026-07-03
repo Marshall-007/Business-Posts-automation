@@ -1,9 +1,11 @@
-name: Refresh Instagram token
+name: Refresh social tokens
 
-# Keeps the long-lived Instagram token alive and writes the refreshed value back
-# to the INSTAGRAM_ACCESS_TOKEN secret. Runs weekly (tokens last 60 days) and can
-# be run manually. Requires a GH_PAT secret (fine-grained PAT with Secrets: write
-# on this repo) and, to upgrade a short-lived token the first time, INSTAGRAM_APP_SECRET.
+# Keeps access tokens alive and writes refreshed values back to repo secrets, so
+# the schedule never breaks. Runs weekly and on demand. Requires a GH_PAT secret
+# (fine-grained PAT with Secrets: write on this repo).
+#   - Instagram: long-lived token (60 days) is refreshed and re-stored.
+#   - Facebook: a permanent Page token is re-derived from the long-lived User
+#     token and re-stored (guards against a short-lived token ever being pasted).
 
 on:
   schedule:
@@ -11,7 +13,7 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  refresh:
+  instagram:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,9 +21,28 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests PyNaCl
-      - name: Refresh and persist token
+      - name: Refresh and persist the Instagram token
         env:
           INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
           INSTAGRAM_APP_SECRET: ${{ secrets.INSTAGRAM_APP_SECRET }}
           GH_PAT: ${{ secrets.GH_PAT }}
         run: python scripts/refresh_instagram_token.py
+
+  facebook:
+    runs-on: ubuntu-latest
+    env:
+      FACEBOOK_USER_TOKEN: ${{ secrets.FACEBOOK_USER_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests PyNaCl
+      - name: Refresh and persist the Facebook Page token
+        if: env.FACEBOOK_USER_TOKEN != ''
+        env:
+          FACEBOOK_APP_ID: ${{ secrets.FACEBOOK_APP_ID }}
+          FACEBOOK_APP_SECRET: ${{ secrets.FACEBOOK_APP_SECRET }}
+          FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: python scripts/refresh_facebook_token.py

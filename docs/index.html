@@ -674,6 +674,7 @@
             <li><code>GH_PAT</code> - the fine-grained token from section 5</li>
             <li><code>FACEBOOK_PAGE_ID</code> - the Page's numeric ID</li>
             <li><code>FACEBOOK_PAGE_ACCESS_TOKEN</code> - the permanent Page token</li>
+            <li><code>FACEBOOK_APP_ID</code>, <code>FACEBOOK_APP_SECRET</code>, <code>FACEBOOK_USER_TOKEN</code> - let the weekly job re-derive the Page token so it never expires</li>
             <li><code>ANTHROPIC_API_KEY</code> - optional, for AI-written standard posts</li>
           </ul>
         </div>
@@ -691,8 +692,15 @@
           upgrading a fresh short-lived token (1 hour) to a long-lived one
           (60 days). With it stored, you can paste any newly generated token
           and the system upgrades it automatically at post time and on the next
-          refresh run. Facebook Page tokens obtained through the long-lived
-          exchange do not expire at all, so they need no refreshing.</p>
+          refresh run.</p>
+          <p><b>Facebook works the same way.</b> A Page token derived from a
+          long-lived User token never expires - but if a short-lived one is ever
+          pasted by mistake, the same weekly job re-derives a fresh permanent
+          Page token from <code>FACEBOOK_USER_TOKEN</code> using
+          <code>FACEBOOK_APP_ID</code> and <code>FACEBOOK_APP_SECRET</code>, and
+          re-stores <code>FACEBOOK_PAGE_ACCESS_TOKEN</code>. Store those three and
+          Facebook can never lapse again. (The one-time symptom where a token
+          "expired" was a short-lived token stored without these three.)</p>
         </div>
       </details>
     </section>
@@ -2050,16 +2058,19 @@ function wizardSteps(c) {
       body: function () {
         return "<p>Posts appear on the business's <b>Facebook Page</b>; a Meta app provides the permission. " +
           "Follow Setup Instructions sections 1-2 to create both, then enter everything here - " +
-          "the exchange to a <b>permanent</b> Page token happens automatically.</p>" +
+          "the exchange to a <b>permanent, never-expiring</b> Page token happens automatically, " +
+          "and a weekly job re-derives it so it can never lapse.</p>" +
           field("wz-fb-appid", "Meta App ID (App settings, Basic)", { value: st.fb_appid || "" }) +
           field("wz-fb-appsecret", "Meta App Secret (App settings, Basic, press Show)", { masked: true }) +
           field("wz-fb-usertoken", "User access token from Graph API Explorer (with pages_show_list, pages_manage_posts, pages_read_engagement)", { masked: true }) +
           field("wz-fb-pageid", "Facebook Page ID (optional - filled automatically if found)", { value: st.fb_pageid || "" }) +
-          "<p>Press <b>Save and Verify</b>: it exchanges your token for a long-lived one, finds the Page, " +
-          "and shows the two values to store as secrets:</p>" +
+          "<p>Press <b>Save and Verify</b>: it upgrades your token to long-lived, finds the Page, " +
+          "and shows the values to store as secrets. Store <b>all five</b> - the last three let the " +
+          "system refresh the token forever on its own:</p>" +
           secretRow("FACEBOOK_PAGE_ID") + secretRow("FACEBOOK_PAGE_ACCESS_TOKEN") +
+          secretRow("FACEBOOK_APP_ID") + secretRow("FACEBOOK_APP_SECRET") + secretRow("FACEBOOK_USER_TOKEN") +
           "<div id='wz-fb-result'></div>" +
-          "<p><a href='" + newSecretLink(c) + "' target='_blank' rel='noopener'>Open the New secret page</a> and add both, then verify again to confirm they are stored.</p>";
+          "<p><a href='" + newSecretLink(c) + "' target='_blank' rel='noopener'>Open the New secret page</a> and add them, then verify again to confirm they are stored.</p>";
       },
       verify: function () {
         var appid = el("wz-fb-appid").value.trim();
@@ -2069,18 +2080,21 @@ function wizardSteps(c) {
         var stw = wizState(c);
         // Phase 2: values already derived; just confirm the secrets exist.
         if (!usertok && stw.fb_pageid) {
-          return checkSecretsExist(c, ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN"])
-            .then(function () { return "Facebook secrets are stored. Page " + stw.fb_pageid + " is connected."; });
+          return checkSecretsExist(c, ["FACEBOOK_PAGE_ID", "FACEBOOK_PAGE_ACCESS_TOKEN",
+              "FACEBOOK_APP_ID", "FACEBOOK_APP_SECRET", "FACEBOOK_USER_TOKEN"])
+            .then(function () { return "All five Facebook secrets are stored. Page " + stw.fb_pageid +
+              " is connected and the token will refresh itself forever."; });
         }
         if (!appid || !appsecret || !usertok) {
           return Promise.reject(new Error("Fill in the App ID, App Secret and user token (or complete the secrets and verify again)."));
         }
         var G = "https://graph.facebook.com/v21.0";
+        var longTok = "";
         return metaGet(G + "/oauth/access_token?grant_type=fb_exchange_token&client_id=" +
             encodeURIComponent(appid) + "&client_secret=" + encodeURIComponent(appsecret) +
             "&fb_exchange_token=" + encodeURIComponent(usertok))
           .then(function (ex) {
-            var longTok = ex.access_token;
+            longTok = ex.access_token;
             var findPage = pageid
               ? metaGet(G + "/" + encodeURIComponent(pageid) + "?fields=access_token,name,id&access_token=" + encodeURIComponent(longTok))
               : metaGet(G + "/me/accounts?access_token=" + encodeURIComponent(longTok)).then(function (r) {
@@ -2098,13 +2112,20 @@ function wizardSteps(c) {
             saveWizState(c, st2);
             el("wz-fb-pageid").value = page.id;
             el("wz-fb-result").innerHTML =
-              "<p><b>Found Page: " + esc(page.name || page.id) + "</b></p>" +
-              "<div class='secretrow'><span class='varname'>" + esc(page.id) + "</span>" +
-              "<button class='copybtn' data-copyval='" + esc(page.id) + "'>Copy Page ID</button>" +
-              "<button class='copybtn' data-copyval='" + esc(page.access_token) + "'>Copy Page token (permanent)</button></div>" +
-              "<p>Store them via the New secret link below, then press Save and Verify again.</p>";
+              "<p><b>Found Page: " + esc(page.name || page.id) + "</b>. Copy each value into the matching secret:</p>" +
+              "<div class='secretrow'><span class='varname'>FACEBOOK_PAGE_ID</span>" +
+              "<button class='copybtn' data-copyval='" + esc(page.id) + "'>Copy value</button></div>" +
+              "<div class='secretrow'><span class='varname'>FACEBOOK_PAGE_ACCESS_TOKEN</span>" +
+              "<button class='copybtn' data-copyval='" + esc(page.access_token) + "'>Copy value (permanent)</button></div>" +
+              "<div class='secretrow'><span class='varname'>FACEBOOK_APP_ID</span>" +
+              "<button class='copybtn' data-copyval='" + esc(appid) + "'>Copy value</button></div>" +
+              "<div class='secretrow'><span class='varname'>FACEBOOK_APP_SECRET</span>" +
+              "<button class='copybtn' data-copyval='" + esc(appsecret) + "'>Copy value</button></div>" +
+              "<div class='secretrow'><span class='varname'>FACEBOOK_USER_TOKEN</span>" +
+              "<button class='copybtn' data-copyval='" + esc(longTok) + "'>Copy value (60-day, auto-renews)</button></div>" +
+              "<p>Store all five via the New secret link below, then press Save and Verify again.</p>";
             bindCopyButtons();
-            return "Page found and permanent token generated. Now save both secrets " +
+            return "Page found and a permanent token generated. Save all five secrets " +
               "via the link, then press Save and Verify again to confirm.";
           });
       }
