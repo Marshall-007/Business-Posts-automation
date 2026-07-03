@@ -25,7 +25,18 @@
       "enabled": false,
       "start_date": "",
       "posts_time_utc": "07:00",
-      "stories_time_utc": "10:00"
+      "stories_time_utc": "10:00",
+      "batches": {
+        "Month 2": {
+          "enabled": false,
+          "start_date": "",
+          "platforms": [
+            "instagram",
+            "facebook",
+            "tiktok"
+          ]
+        }
+      }
     }
   }
 }
