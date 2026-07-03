@@ -29,6 +29,30 @@
       "scheduled_at": "2026-07-03T15:30:00.000Z",
       "status": "pending",
       "attempts": 0
+    },
+    {
+      "id": "test_feed_1783046716",
+      "source": "test",
+      "media_path": "docs/uploads/test-feed-1783046716.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude%2Faccount-setup-config-569zpw/docs/uploads/test-feed-1783046716.jpg",
+      "post_type": "feed",
+      "is_video": false,
+      "caption": "Building a kitchen, a wardrobe or a full shop fit? Start with boards cut right the first time. Precision cutting is our specialty.\n\nCome see the range for yourself, or send us a DM.\n\n#Gwalava #BoardsAndFittings #GwalavaFurnitureFittings #CustomFurniture #GlossBoards #ColourBoards #CabinetMaking #EdgeBanding #KitchenCabinets #InstaHome #DreamKitchen #HouseGoals #Viral #FurnitureDesign #HomeImprovement",
+      "scheduled_at": "2026-07-03T02:44:16+00:00",
+      "status": "pending",
+      "attempts": 0
+    },
+    {
+      "id": "test_story_1783046716",
+      "source": "test",
+      "media_path": "docs/uploads/test-story-1783046716.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude%2Faccount-setup-config-569zpw/docs/uploads/test-story-1783046716.jpg",
+      "post_type": "story",
+      "is_video": false,
+      "caption": "",
+      "scheduled_at": "2026-07-03T02:44:16+00:00",
+      "status": "pending",
+      "attempts": 0
     }
   ]
 }
