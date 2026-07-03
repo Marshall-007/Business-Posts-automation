@@ -3,7 +3,7 @@
 The single place to see what is finished, what is in progress, and what is
 still to do. Update this file whenever something changes.
 
-Last updated: 2026-07-03 (enterprise dashboard rebuild)
+Last updated: 2026-07-03 (full audit)
 
 ## Latest: enterprise dashboard
 
@@ -47,13 +47,24 @@ and **Settings** (connection). Highlights:
 | Mobile view | BUILT | responsive under 700px |
 | Admin portal (multi-company) | BUILT | docs/admin.html |
 | Safety: 20 posts / 24h cap, past-date guard, retries | BUILT | tests cover all three |
-| Test suite | GREEN | 75+ tests, CI on every push |
+| Test suite | GREEN | 65 tests, CI on every push |
 
+
+## LIVE right now (audit 2026-07-03)
+
+- "William Collins Ghost 1" Month 1 is ENABLED: 93 posts queued for
+  Instagram + Facebook, Day 1 starting 2026-07-04, through 2026-07-23.
+- GitHub Pages is serving the dashboard (branch deploy, builds green).
+- All workflows green: scheduler, tests, token refresh.
 
 ## To do (user actions, not code)
 
-- [ ] Set a start date, platforms, and tick Month 1 of "William Collins Ghost 1", then Save - posting begins.
-- [ ] Confirm GitHub Pages is serving /docs on the default branch (dashboard + admin portal + privacy/terms pages).
+- [ ] URGENT - the stored Facebook Page token EXPIRED on 2 July (it was a
+  short-lived token). Instagram still posts; every Facebook mirror now fails
+  (see the Dashboard activity log). Fix in 2 minutes: Companies -> Gwalava ->
+  Guided setup -> Facebook step - paste a fresh Graph Explorer token and it
+  exchanges it for a PERMANENT one; then update the
+  FACEBOOK_PAGE_ACCESS_TOKEN secret with the value it gives you.
 - [ ] In the TikTok developer portal, delete the unused "Gwalava Poster" app (TikTok support was removed).
 
 ## To do (future improvements)

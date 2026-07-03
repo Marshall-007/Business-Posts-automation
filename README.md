@@ -47,24 +47,26 @@ schedule. You can also trigger a run manually from the repo's **Actions** tab
 
 ## Dashboard (GitHub Pages)
 
-A no-backend web dashboard lives in `docs/index.html`. It lets you:
+A no-backend, single-page dashboard lives in `docs/index.html`, with a left
+menu showing one section at a time:
 
-- **Add/edit/delete flows** — a *flow* is a saved posting preset (which platforms,
-  an optional fixed caption, an optional Instagram image). Flows are stored in
-  `data/flows.json` and edited directly through the dashboard.
-- **Trigger a run** — "Run standard post" or "Run now" on any flow dispatches the
-  GitHub Actions workflow, which publishes for you.
-- **See recent runs** — status and links to each workflow run.
+- **Dashboard** — today's numbers, the activity log (every publish attempt
+  with the platform's full error text on failure, `data/activity.json`), and
+  recent workflow runs.
+- **Scheduled Posts** — the queue (`data/queue.json`): everything waiting to
+  publish, cancellable per item, plus "process due posts now".
+- **Auto Posts** — the campaigns/months described below, with bulk upload.
+- **Companies** — switch between the businesses you manage; each card has a
+  **Guided setup** wizard that connects GitHub, Facebook (permanent Page
+  token) and Instagram (auto-upgraded long-lived token) with verification at
+  every step.
+- **Admin** — "Add Company" creates a new client's repository automatically
+  (default branch `main`, personalized config, cleared starter data).
+- **User Manual / Setup Instructions** — the built-in guides.
+- **Settings** — the GitHub connection (repo must be **Public** so Instagram
+  can fetch the images).
 
-**Schedule Instagram posts** — the dashboard also has a *Schedule Instagram posts*
-section: add up to three images with captions and a day/time for each. Each image
-is squared to 1080x1080 (white padding) and uploaded to the repo; the
-`Scheduled Instagram queue` workflow (`scheduler.yml`, runs every 15 min) posts
-each one at its chosen time and then deletes the image from the repo. The queue
-lives in `data/queue.json`. This requires the repo to be **Public** so Instagram
-can fetch the images.
-
-**Content campaigns (hands-free posting)** — instead of uploading through the UI,
+**Auto Posts campaigns (hands-free posting)** — 
 create named campaign folders (each with its own start date) and drop
 images/videos in; they post themselves. A **day** is any folder containing a
 `Post`/`Story` subfolder, at any depth and in any case, so your existing folder
@@ -109,13 +111,13 @@ best-effort — a Facebook error is recorded on the queue item but never blocks
 Instagram.
 
 
-**Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
-*Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many
-feed posts and stories go in each day (2 or 3), and it sizes them (feed
-1080x1080, story 1080x1920), sorts them into `day1/day2/...` `posts`/`stories`
-folders for the chosen campaign, and commits them all in one commit via the Git
-Data API. A new campaign name is created automatically. Then set the campaign's
-start date and enable it.
+**Bulk upload and auto-sort** — under *Auto Posts*: pick a pile of unsorted
+images, choose the campaign and the target month (existing months continue
+their own day numbering; new months start at Day 1), choose how many feed
+posts and stories go in each day (2 or 3), and it sizes them, sorts them into
+`Month N/Day N/Post|Story` folders, and commits everything in one commit via
+the Git Data API. New campaigns and months are registered automatically,
+unchecked, until you set the month's date and tick it.
 
 **Tests** — `python -m pytest` runs the suite in `tests/` (image conversion,
 folder scheduling, queue posting/retries, Instagram API parameters, caption
@@ -125,15 +127,14 @@ It talks directly to the GitHub API using a fine-grained token you paste in
 (stored only in your browser). To use it:
 
 1. Create a **fine-grained PAT** (GitHub → Settings → Developer settings →
-   Fine-grained tokens) scoped to this repo with **Actions: Read and write** and
-   **Contents: Read and write**.
-2. Open the dashboard and paste the token under **Connection → Save**.
+   Fine-grained tokens) scoped to this repo with **Actions**, **Contents**, and
+   **Secrets** all set to Read and write.
+2. Open the dashboard and paste the token under **Settings → Save**.
 
-**Hosting:** GitHub Pages on a **private** repo requires a paid plan. Either make
-the repo Public (Settings → General → Change visibility) and enable
-Pages (Settings → Pages → Source: **GitHub Actions**) — the included
-`pages.yml` workflow then deploys it — **or** simply open `docs/index.html`
-in your browser locally; it works identically since it only calls the GitHub API.
+**Hosting:** repo **Settings → Pages → Source: Deploy from a branch**, pick the
+default branch and the `/docs` folder. The dashboard is then live at
+`https://OWNER.github.io/REPO/`. (Or open `docs/index.html` locally; it works
+identically since it only calls the GitHub API.)
 
 Run a specific flow from the command line too:
 
