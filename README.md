@@ -87,6 +87,13 @@ and at most 20 posts go out per rolling 24h (Instagram's API allows ~25;
 override with the `IG_DAILY_CAP` env var). See `content/README.md` for
 details.
 
+**Facebook cross-posting** — set the `FACEBOOK_PAGE_ID` and
+`FACEBOOK_PAGE_ACCESS_TOKEN` secrets (see **[SETUP.md](SETUP.md)** §3) and
+**every** item posted to Instagram is automatically mirrored to your Facebook
+Page: feed photos as Page photos, Reels as Page videos, stories as Page posts.
+It is best-effort — a Facebook error is recorded on the queue item but never
+blocks Instagram.
+
 **Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
 *Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many
 feed posts and stories go in each day (2 or 3), and it sizes them (feed

@@ -8,6 +8,7 @@ import pytest
 
 import src.queue_runner as qr
 from src.platforms.base import PostError
+from src.platforms.facebook import Facebook
 from src.platforms.instagram import Instagram
 
 NOW = datetime(2026, 7, 10, 12, 0, tzinfo=timezone.utc)
@@ -168,6 +169,68 @@ def test_due_items_post_oldest_first(tmp_path, ig_env, fake_publish):
 
     assert [c["url"] for c in fake_publish] == \
         ["https://raw.test/o.jpg", "https://raw.test/n.jpg"]
+
+
+@pytest.fixture
+def fb_env(monkeypatch):
+    monkeypatch.setenv("FACEBOOK_PAGE_ID", "PAGE123")
+    monkeypatch.setenv("FACEBOOK_PAGE_ACCESS_TOKEN", "EAAtoken")
+
+
+def test_configured_facebook_gets_every_item_cross_posted(
+        tmp_path, ig_env, fb_env, fake_publish, monkeypatch):
+    fb_calls = []
+
+    def fb_pub(self, caption, url, post_type="feed", is_video=False):
+        fb_calls.append({"url": url, "post_type": post_type, "is_video": is_video})
+        return "fb_999"
+
+    monkeypatch.setattr(Facebook, "publish_media", fb_pub)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [
+        item(tmp_path, id="feed", media_path="docs/uploads/a.jpg"),
+        item(tmp_path, id="story", post_type="story", media_path="docs/uploads/s.jpg"),
+    ])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert len(fb_calls) == 2                       # both mirrored to Facebook
+    assert all(it["fb_post_id"] == "fb_999" for it in items)
+    assert all(it["status"] == "posted" for it in items)
+
+
+def test_facebook_failure_does_not_block_instagram_or_deletion(
+        tmp_path, ig_env, fb_env, fake_publish, monkeypatch):
+    def fb_boom(self, *a, **k):
+        raise PostError("bad page token")
+
+    monkeypatch.setattr(Facebook, "publish_media", fb_boom)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    # Instagram still succeeded, media still removed, FB error recorded only.
+    assert items[0]["status"] == "posted"
+    assert items[0]["fb_error"] == "bad page token"
+    assert "fb_post_id" not in items[0]
+    assert not (tmp_path / "docs/uploads/a.jpg").exists()
+
+
+def test_no_facebook_cross_post_when_unconfigured(
+        tmp_path, ig_env, fake_publish, monkeypatch):
+    monkeypatch.delenv("FACEBOOK_PAGE_ID", raising=False)
+    monkeypatch.delenv("FACEBOOK_PAGE_ACCESS_TOKEN", raising=False)
+    called = []
+    monkeypatch.setattr(Facebook, "publish_media",
+                        lambda self, *a, **k: called.append(1))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert called == []
+    assert "fb_post_id" not in items[0] and "fb_error" not in items[0]
 
 
 def test_unconfigured_instagram_posts_nothing(tmp_path, monkeypatch, fake_publish):

@@ -27,6 +27,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .config import Credentials, load_business_config
+from .platforms.base import PostError
+from .platforms.facebook import Facebook
 from .platforms.instagram import Instagram
 
 QUEUE_FILE = Path(__file__).resolve().parent.parent / "data" / "queue.json"
@@ -118,6 +120,8 @@ def process_due(
 
     creds = Credentials()
     business_config = load_business_config()
+    facebook = Facebook(creds, business_config)
+    fb_ready = facebook.is_configured()
     changed = False
 
     for item in due:
@@ -144,6 +148,23 @@ def process_due(
             changed = True
             kind = "story" if post_type == "story" else ("reel" if is_video else "image")
             print(f"[ok] posted {item['id']} ({kind}, post id {post_id})")
+
+            # Cross-post the same media to the Facebook Page (best effort: a
+            # Facebook failure must not block Instagram or re-trigger a retry,
+            # since Instagram already succeeded). Done before the file is
+            # deleted so Facebook can still fetch it from the public URL.
+            if fb_ready:
+                try:
+                    fb_id = facebook.publish_media(
+                        item.get("caption", ""), media_url, post_type, is_video
+                    )
+                    item["fb_post_id"] = fb_id
+                    item.pop("fb_error", None)
+                    print(f"     cross-posted to Facebook (post id {fb_id})")
+                except (PostError, Exception) as fb_exc:  # noqa: BLE001
+                    item["fb_error"] = str(fb_exc)
+                    print(f"     [warn] Facebook cross-post failed: {fb_exc}",
+                          file=sys.stderr)
 
             # Remove the media from the repo now that it is published.
             media = root / media_path if media_path else None

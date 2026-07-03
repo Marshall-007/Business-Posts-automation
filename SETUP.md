@@ -47,18 +47,43 @@ Without this key the system still works — it rotates through the
 
 ---
 
-## 3. Facebook Page
+## 3. Facebook Page (cross-posts everything from Instagram)
+
+When these two secrets are set, **every item the scheduler posts to Instagram
+is also posted to your Facebook Page** — feed photos as Page photos, Reels as
+Page videos, and stories as Page photo/video posts. Facebook is best-effort: if
+it ever fails (e.g. an expired token) Instagram still posts and the Facebook
+error is recorded on the queue item, never blocking the run.
 
 | Secret name | Value |
 |---|---|
 | `FACEBOOK_PAGE_ID` | Numeric ID of your Facebook Page |
 | `FACEBOOK_PAGE_ACCESS_TOKEN` | Long-lived Page access token |
 
-1. Have a Facebook **Page** for the business (created from your personal account).
-2. Go to https://developers.facebook.com → **My Apps → Create App** (type: Business).
-3. Add the **Facebook Login / Pages** products and grant the app these permissions: `pages_manage_posts`, `pages_read_engagement`.
-4. In **Graph API Explorer** (Tools menu): select your app → get a **User token** with the permissions above → exchange it for a long-lived token → call `GET /me/accounts` to get your **Page ID** and **Page access token**.
-5. Store the Page ID and the Page access token as the secrets above.
+**a. Create the Gwalava Page** (once, from your personal Facebook account):
+go to https://www.facebook.com/pages/create → name it *Gwalava Boards and
+Furniture Fittings*, pick a category (e.g. *Furniture shop*), and publish. This
+must be done while logged into Facebook as yourself — it cannot be automated.
+
+**b. Create an app:** https://developers.facebook.com → **My Apps → Create
+App** (type: **Business**). Under **App settings → Basic**, note the App ID.
+
+**c. Grant permissions & get tokens:** open **Tools → Graph API Explorer**,
+select your app, click **Generate Access Token**, and approve
+`pages_manage_posts`, `pages_read_engagement`, `pages_show_list`. Then:
+
+- Call `GET /me/accounts` — the response lists your Page's **`id`** (that is
+  `FACEBOOK_PAGE_ID`) and a Page **`access_token`**.
+- Make it **long-lived**: exchange the token at
+  `GET /oauth/access_token?grant_type=fb_exchange_token&client_id=APP_ID&client_secret=APP_SECRET&fb_exchange_token=SHORT_TOKEN`,
+  then call `GET /me/accounts` again with the long-lived user token — the Page
+  token it returns does not expire.
+
+**d. Store** the Page ID and the long-lived Page access token as the two
+secrets above (GitHub → Settings → Secrets and variables → Actions).
+
+You can paste the Page ID and Page token to me and I will confirm they work by
+running a live cross-post test on GitHub Actions.
 
 ## 4. Instagram (Instagram Login flow — posts require an image)
 
