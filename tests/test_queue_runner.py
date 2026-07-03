@@ -10,6 +10,7 @@ import src.queue_runner as qr
 from src.platforms.base import PostError
 from src.platforms.facebook import Facebook
 from src.platforms.instagram import Instagram
+from src.platforms.tiktok import TikTok
 
 NOW = datetime(2026, 7, 10, 12, 0, tzinfo=timezone.utc)
 
@@ -175,6 +176,69 @@ def test_due_items_post_oldest_first(tmp_path, ig_env, fake_publish):
 def fb_env(monkeypatch):
     monkeypatch.setenv("FACEBOOK_PAGE_ID", "PAGE123")
     monkeypatch.setenv("FACEBOOK_PAGE_ACCESS_TOKEN", "EAAtoken")
+
+
+@pytest.fixture
+def tt_env(monkeypatch):
+    monkeypatch.setenv("TIKTOK_CLIENT_KEY", "ck")
+    monkeypatch.setenv("TIKTOK_CLIENT_SECRET", "cs")
+    monkeypatch.setenv("TIKTOK_ACCESS_TOKEN", "at_live")
+
+
+def test_tiktok_gets_feed_items_but_not_stories(
+        tmp_path, ig_env, tt_env, fake_publish, monkeypatch):
+    tt_calls = []
+
+    def tt_pub(self, caption, url, post_type="feed", is_video=False, media_path=None):
+        tt_calls.append({"post_type": post_type, "is_video": is_video, "path": media_path})
+        return "tt_777"
+
+    monkeypatch.setattr(TikTok, "publish_media", tt_pub)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [
+        item(tmp_path, id="feed", media_path="docs/uploads/a.jpg"),
+        item(tmp_path, id="story", post_type="story", media_path="docs/uploads/s.jpg"),
+    ])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    # Only the feed item is sent to TikTok; the story is skipped there.
+    assert len(tt_calls) == 1
+    assert tt_calls[0]["post_type"] == "feed"
+    assert tt_calls[0]["path"].endswith("docs/uploads/a.jpg")   # local path for byte upload
+    feed = next(it for it in items if it["id"] == "feed")
+    story = next(it for it in items if it["id"] == "story")
+    assert feed["tiktok_publish_id"] == "tt_777"
+    assert "tiktok_publish_id" not in story
+    assert all(it["status"] == "posted" for it in items)
+
+
+def test_tiktok_failure_does_not_block_instagram(
+        tmp_path, ig_env, tt_env, fake_publish, monkeypatch):
+    monkeypatch.setattr(TikTok, "publish_media",
+                        lambda self, *a, **k: (_ for _ in ()).throw(PostError("tt down")))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert items[0]["status"] == "posted"
+    assert items[0]["tiktok_error"] == "tt down"
+    assert not (tmp_path / "docs/uploads/a.jpg").exists()
+
+
+def test_no_tiktok_when_unconfigured(tmp_path, ig_env, fake_publish, monkeypatch):
+    for k in ("TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET",
+              "TIKTOK_REFRESH_TOKEN", "TIKTOK_ACCESS_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
+    called = []
+    monkeypatch.setattr(TikTok, "publish_media", lambda self, *a, **k: called.append(1))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+    assert called == []
+    assert "tiktok_publish_id" not in items[0] and "tiktok_error" not in items[0]
 
 
 def test_configured_facebook_gets_every_item_cross_posted(

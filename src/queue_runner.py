@@ -30,6 +30,7 @@ from .config import Credentials, load_business_config
 from .platforms.base import PostError
 from .platforms.facebook import Facebook
 from .platforms.instagram import Instagram
+from .platforms.tiktok import TikTok
 
 QUEUE_FILE = Path(__file__).resolve().parent.parent / "data" / "queue.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -122,6 +123,8 @@ def process_due(
     business_config = load_business_config()
     facebook = Facebook(creds, business_config)
     fb_ready = facebook.is_configured()
+    tiktok = TikTok(creds, business_config)
+    tt_ready = tiktok.is_configured()
     changed = False
 
     for item in due:
@@ -164,6 +167,24 @@ def process_due(
                 except (PostError, Exception) as fb_exc:  # noqa: BLE001
                     item["fb_error"] = str(fb_exc)
                     print(f"     [warn] Facebook cross-post failed: {fb_exc}",
+                          file=sys.stderr)
+
+            # Cross-post feed items to TikTok (best effort, same rationale as
+            # Facebook). TikTok has no Stories API, so stories are skipped.
+            # Uses the local file for video byte upload, so it runs before the
+            # media is deleted below.
+            if tt_ready and post_type != "story":
+                try:
+                    local = str(root / media_path) if media_path else None
+                    tt_id = tiktok.publish_media(
+                        item.get("caption", ""), media_url, post_type, is_video, local
+                    )
+                    item["tiktok_publish_id"] = tt_id
+                    item.pop("tiktok_error", None)
+                    print(f"     cross-posted to TikTok (publish id {tt_id})")
+                except (PostError, Exception) as tt_exc:  # noqa: BLE001
+                    item["tiktok_error"] = str(tt_exc)
+                    print(f"     [warn] TikTok cross-post failed: {tt_exc}",
                           file=sys.stderr)
 
             # Remove the media from the repo now that it is published.

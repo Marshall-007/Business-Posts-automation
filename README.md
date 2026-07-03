@@ -96,6 +96,15 @@ Page's Stories ring and expire after 24 hours, exactly like Instagram). It is
 best-effort — a Facebook error is recorded on the queue item but never blocks
 Instagram.
 
+**TikTok cross-posting** — set the `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET`
+and `TIKTOK_REFRESH_TOKEN` secrets (see **[SETUP.md](SETUP.md)** §4b) and every
+**feed** item posted to Instagram is also posted to TikTok — photos as TikTok
+photo posts, videos as TikTok videos. Stories are not sent (TikTok has no public
+Stories API). Access tokens refresh automatically every 4 hours. Posts are
+private (`SELF_ONLY`) until your TikTok app passes review, then set
+`TIKTOK_PRIVACY_LEVEL=PUBLIC_TO_EVERYONE`. Like Facebook, it is best-effort and
+never blocks Instagram.
+
 **Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
 *Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many
 feed posts and stories go in each day (2 or 3), and it sizes them (feed
