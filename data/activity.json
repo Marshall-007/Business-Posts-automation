@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "at": "2026-07-03T19:48:16+00:00",
+      "item": "post_1783025415985_677072",
+      "platform": "facebook",
+      "kind": "image",
+      "ok": false,
+      "error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Friday, 03-Jul-26 12:48:33 PDT."
+    },
+    {
+      "at": "2026-07-03T19:48:16+00:00",
+      "item": "post_1783025415985_677072",
+      "platform": "instagram",
+      "kind": "image",
+      "ok": true,
+      "post_id": "18050791370557855"
+    }
+  ]
+}
