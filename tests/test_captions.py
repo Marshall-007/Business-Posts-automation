@@ -5,6 +5,8 @@ import random
 from src.captions import (
     BRAND_TAGS,
     CAPTION_BODIES,
+    CONTACT_PHONE,
+    CONTACT_URL,
     MAX_CAPTION_CHARS,
     MAX_HASHTAGS,
     NICHE_TAGS,
@@ -12,6 +14,7 @@ from src.captions import (
     CaptionPool,
     hashtag_block,
     random_caption,
+    with_contact,
     with_tags,
 )
 
@@ -23,6 +26,23 @@ def test_caption_structure_and_instagram_limits():
     assert "#Gwalava" in cap                      # brand presence
     assert any(t in cap for t in NICHE_TAGS)      # furniture-fittings niche
     assert any(t in cap for t in VIRAL_TAGS)      # high-reach tags
+    assert CONTACT_PHONE in cap                   # contact number
+    assert CONTACT_URL in cap                     # website
+
+
+def test_every_random_caption_carries_contact_details():
+    pool = CaptionPool(random.Random(7))
+    for _ in range(len(CAPTION_BODIES) + 3):
+        cap = pool.next_caption()
+        assert CONTACT_PHONE in cap and CONTACT_URL in cap
+
+
+def test_with_contact_is_idempotent():
+    once = with_contact("Nice boards")
+    assert CONTACT_PHONE in once and CONTACT_URL in once
+    # A caption that already lists the number is left as-is (no duplicate).
+    assert with_contact(once) == once
+    assert once.count(CONTACT_PHONE) == 1
 
 
 def test_hashtag_block_mixes_all_pools():
@@ -44,16 +64,22 @@ def test_pool_never_repeats_a_body_until_exhausted():
     assert pool.next_caption()
 
 
-def test_with_tags_appends_only_when_text_has_none():
+def test_with_tags_adds_contact_always_and_tags_only_when_missing():
     rng = random.Random(4)
     tagged = with_tags("Nice kitchen", rng)
     assert tagged.startswith("Nice kitchen")
-    assert "#" in tagged
+    assert CONTACT_PHONE in tagged and CONTACT_URL in tagged
+    assert "#" in tagged                         # tag block appended
 
+    # Text that brought its own hashtags keeps them and gets no extra block,
+    # but still receives the contact details.
     own = with_tags("My words #handpicked", rng)
-    assert own == "My words #handpicked"
+    assert own.startswith("My words #handpicked")
+    assert CONTACT_PHONE in own
+    assert own.count("#") == 1                    # no auto tag block added
 
 
 def test_no_emoji_in_any_caption_material():
-    text = " ".join(CAPTION_BODIES + BRAND_TAGS + NICHE_TAGS + VIRAL_TAGS)
+    text = " ".join(CAPTION_BODIES + BRAND_TAGS + NICHE_TAGS + VIRAL_TAGS +
+                     [CONTACT_PHONE, CONTACT_URL])
     assert all(ord(ch) < 0x2600 for ch in text)

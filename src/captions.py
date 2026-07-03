@@ -15,6 +15,11 @@ import random
 MAX_CAPTION_CHARS = 2200
 MAX_HASHTAGS = 30
 
+# Contact details appended to every caption by default.
+CONTACT_PHONE = "0813471724"
+CONTACT_URL = "https://marshall-007.github.io/Gwalava-Boards/"
+CONTACT_LINE = f"Call us on {CONTACT_PHONE}\n{CONTACT_URL}"
+
 CAPTION_BODIES = [
     "A kitchen this clean starts below the surface: quality boards, precise "
     "cuts and fittings that hold their line for years. That is what we supply, "
@@ -139,12 +144,21 @@ def hashtag_block(rng: random.Random | None = None) -> str:
     return " ".join(tags[:MAX_HASHTAGS])
 
 
-def with_tags(text: str, rng: random.Random | None = None) -> str:
-    """Append a randomized tag block to user-written text that has no tags."""
+def with_contact(text: str) -> str:
+    """Append the contact line to text unless it already lists the number."""
     text = (text or "").strip()
-    if "#" in text:
-        return text[:MAX_CAPTION_CHARS]
-    return f"{text}\n\n{hashtag_block(rng)}"[:MAX_CAPTION_CHARS].strip()
+    if CONTACT_PHONE in text:
+        return text
+    return f"{text}\n\n{CONTACT_LINE}".strip() if text else CONTACT_LINE
+
+
+def with_tags(text: str, rng: random.Random | None = None) -> str:
+    """Add the contact line, then a randomized tag block if the text has none."""
+    original = (text or "").strip()
+    body = with_contact(original)
+    if "#" in original:
+        return body[:MAX_CAPTION_CHARS]
+    return f"{body}\n\n{hashtag_block(rng)}"[:MAX_CAPTION_CHARS].strip()
 
 
 class CaptionPool:
@@ -165,6 +179,7 @@ class CaptionPool:
         caption = (
             f"{self._next_body()}\n\n"
             f"{self.rng.choice(CTAS)}\n\n"
+            f"{CONTACT_LINE}\n\n"
             f"{hashtag_block(self.rng)}"
         )
         return caption[:MAX_CAPTION_CHARS]

@@ -76,6 +76,11 @@ Checked in this order:
 If your own caption (1 or 2) contains no `#hashtags`, a randomized tag block
 is appended to it automatically.
 
+**Every caption** (yours or auto-written) ends with the business contact line
+— `Call us on 0813471724` and `https://marshall-007.github.io/Gwalava-Boards/`
+— unless your own text already includes the number. Edit these in
+`src/captions.py` (`CONTACT_PHONE` / `CONTACT_URL`).
+
 ## Safety valves
 
 - A slot more than **24 hours in the past** is never queued — so enabling a

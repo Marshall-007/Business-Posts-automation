@@ -184,12 +184,16 @@ def test_sidecar_beats_folder_caption(tmp_path, ig_env, business_config):
     assert "Folder" not in added[0]["caption"]
 
 
-def test_sidecar_with_own_hashtags_is_untouched(tmp_path, ig_env, business_config):
+def test_sidecar_with_own_hashtags_keeps_them_and_gets_contact(tmp_path, ig_env, business_config):
+    from src.captions import CONTACT_PHONE
     qp = write_campaigns(tmp_path, {"C": CFG})
     write(tmp_path / "content/C/day1/posts/a.jpg")
     write(tmp_path / "content/C/day1/posts/a.txt", "My caption #mytag")
     added = run(tmp_path, qp, business_config)
-    assert added[0]["caption"] == "My caption #mytag"
+    cap = added[0]["caption"]
+    assert cap.startswith("My caption #mytag")
+    assert CONTACT_PHONE in cap          # contact appended
+    assert cap.count("#") == 1           # no auto tag block on user hashtags
 
 
 def test_randomized_captions_are_unique_with_brand_and_viral_tags(
