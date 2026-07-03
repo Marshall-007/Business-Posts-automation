@@ -57,6 +57,18 @@
       "attempts": 0,
       "post_id": "18366329551238620",
       "posted_at": "2026-07-03T02:45:57+00:00"
+    },
+    {
+      "id": "fbtest_1783053237",
+      "source": "manual-test",
+      "media_path": "docs/uploads/fbtest-1783053237.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude/account-setup-config-569zpw/docs/uploads/fbtest-1783053237.jpg",
+      "post_type": "feed",
+      "is_video": false,
+      "caption": "Gwalava Boards Facebook cross-post test.\n\nThis post confirms our Facebook Page pipeline is live.\n\nCall us on 0813471724\nhttps://marshall-007.github.io/Gwalava-Boards/\n\n#GwalavaBoards #Gwalava #FurnitureFittings #BoardsAndFittings",
+      "scheduled_at": "2026-07-03T04:32:57+00:00",
+      "status": "pending",
+      "attempts": 0
     }
   ]
 }
