@@ -67,8 +67,11 @@
       "is_video": false,
       "caption": "Gwalava Boards Facebook cross-post test.\n\nThis post confirms our Facebook Page pipeline is live.\n\nCall us on 0813471724\nhttps://marshall-007.github.io/Gwalava-Boards/\n\n#GwalavaBoards #Gwalava #FurnitureFittings #BoardsAndFittings",
       "scheduled_at": "2026-07-03T04:32:57+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18102970513877814",
+      "posted_at": "2026-07-03T04:34:18+00:00",
+      "fb_post_id": "1172085925986334_122112758517359188"
     }
   ]
 }
