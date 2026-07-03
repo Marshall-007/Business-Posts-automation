@@ -31,8 +31,12 @@
       "media_type": "IMAGE",
       "caption": "At Gwalava Boards and Furniture Fittings, we are dedicated to providing top-notch products and services to meet your furniture needs. With our commitment to quality and innovation, we ensure that every project is completed with precision and expertise.",
       "scheduled_at": "2026-07-03T15:30:00.000Z",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17879935098471257",
+      "ig_post_id": "17879935098471257",
+      "posted_at": "2026-07-03T16:52:51+00:00",
+      "fb_error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Friday, 03-Jul-26 09:53:06 PDT."
     },
     {
       "id": "test_feed_1783046716",
