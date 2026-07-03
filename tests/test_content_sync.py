@@ -63,7 +63,9 @@ def test_named_campaign_two_posts_six_hours_apart(tmp_path, ig_env, business_con
         "2026-07-10T07:00:00+00:00", "2026-07-10T13:00:00+00:00",
     ]
     assert all(it["campaign"] == "William Collins Ghost 1" for it in added)
-    assert all(it["post_type"] == "feed" and it["caption"] == "Folder caption" for it in added)
+    # Folder caption is kept, and a randomized tag block is appended.
+    assert all(it["post_type"] == "feed" and it["caption"].startswith("Folder caption")
+               and "#" in it["caption"] for it in added)
     assert added[0]["media_url"] == \
         "https://raw.test/content/William%20Collins%20Ghost%201/day1/posts/a.jpg"
 
@@ -98,7 +100,7 @@ def test_days_map_to_consecutive_dates_in_natural_order(tmp_path, ig_env, busine
     assert by_path["posts/a.jpg"]["scheduled_at"].startswith("2026-07-10")   # Day 1
     reel = by_path["posts/reel.mp4"]
     assert reel["scheduled_at"].startswith("2026-07-11")                     # Day 2
-    assert reel["is_video"] is True and reel["caption"] == "Reel cap"
+    assert reel["is_video"] is True and reel["caption"].startswith("Reel cap")
     assert by_path["posts/c.jpg"]["scheduled_at"].startswith("2026-07-12")   # Day 10 (3rd)
 
 
@@ -178,16 +180,61 @@ def test_sidecar_beats_folder_caption(tmp_path, ig_env, business_config):
     write(tmp_path / "content/C/day1/posts/a.txt", "Sidecar")
     write(tmp_path / "content/C/day1/posts/caption.txt", "Folder")
     added = run(tmp_path, qp, business_config)
-    assert added[0]["caption"] == "Sidecar"
+    assert added[0]["caption"].startswith("Sidecar")
+    assert "Folder" not in added[0]["caption"]
 
 
-def test_generated_caption_when_no_text(tmp_path, ig_env, business_config, monkeypatch):
+def test_sidecar_with_own_hashtags_is_untouched(tmp_path, ig_env, business_config):
     qp = write_campaigns(tmp_path, {"C": CFG})
     write(tmp_path / "content/C/day1/posts/a.jpg")
-    monkeypatch.setattr(cs.content_generator, "generate_posts",
-                        lambda bc, key: ("t", {"instagram": "GENERATED"}))
+    write(tmp_path / "content/C/day1/posts/a.txt", "My caption #mytag")
     added = run(tmp_path, qp, business_config)
-    assert added[0]["caption"] == "GENERATED"
+    assert added[0]["caption"] == "My caption #mytag"
+
+
+def test_randomized_captions_are_unique_with_brand_and_viral_tags(
+        tmp_path, ig_env, business_config):
+    from src.captions import VIRAL_TAGS
+    qp = write_campaigns(tmp_path, {"C": CFG})
+    write(tmp_path / "content/C/day1/posts/a.jpg")
+    write(tmp_path / "content/C/day1/posts/b.jpg")
+    write(tmp_path / "content/C/day2/posts/c.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    captions = [it["caption"] for it in added]
+
+    assert len(set(captions)) == 3          # every post gets a unique caption
+    for cap in captions:
+        assert "#Gwalava" in cap            # brand tags present
+        assert any(tag in cap for tag in VIRAL_TAGS)
+        assert 10 <= cap.count("#") <= 30   # Instagram allows max 30 hashtags
+        assert len(cap) <= 2200
+
+
+def test_slots_older_than_grace_are_not_enqueued(tmp_path, ig_env, business_config):
+    # A start date far in the past must not flood the queue (Instagram's API
+    # allows ~25 posts/day). Old slots simply wait for a corrected start date.
+    qp = write_campaigns(tmp_path, {"Old": {**CFG, "start_date": "2026-06-01"}})
+    write(tmp_path / "content/Old/day1/posts/a.jpg")
+    write(tmp_path / "content/Old/day1/stories/s.jpg")
+
+    assert run(tmp_path, qp, business_config) == []
+
+    # Fixing the start date to today queues them normally.
+    write_campaigns(tmp_path, {"Old": CFG})
+    added = run(tmp_path, qp, business_config)
+    assert len(added) == 2
+
+
+def test_slot_within_grace_still_posts(tmp_path, ig_env, business_config):
+    # NOW is 06:00 on the start date; a story slot from yesterday would be in
+    # the past but within the 24h grace, so it still goes out (late).
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "start_date": "2026-07-09"}})
+    write(tmp_path / "content/C/day1/stories/s.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    assert len(added) == 1
+    assert added[0]["scheduled_at"] == "2026-07-09T10:00:00+00:00"
 
 
 def test_rerun_no_duplicate_and_new_file_continues(tmp_path, ig_env, business_config):

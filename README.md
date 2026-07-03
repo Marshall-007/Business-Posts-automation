@@ -75,10 +75,17 @@ spread across the day automatically: 2 files post 6h apart, 3 files 4h apart,
 4+ files 3h apart. Images are converted to JPEG and sized automatically
 (`.webp`/`.png` are fine; feed keeps its aspect ratio within Instagram's limits,
 story 1080x1920). Captions come from a
-matching `photo1.txt`, a folder `caption.txt`, or are auto-generated. Every
+matching `photo1.txt`, a folder `caption.txt` (a randomized hashtag block is
+appended if your text has none), or a **unique randomized Gwalava caption** is
+written for each post — brand tags, furniture-fittings niche tags, and
+high-reach viral tags, never repeating back-to-back (`src/captions.py`). Every
 15 minutes the scheduler (`scheduler.yml`) converts new images, queues them
 (visible/cancellable in the dashboard Queue), posts what is due, and deletes
-each file after posting. See `content/README.md` for details.
+each file after posting. Two safety valves protect the account: slots more
+than 24h in the past are not queued (a wrong start date can't flood the feed),
+and at most 20 posts go out per rolling 24h (Instagram's API allows ~25;
+override with the `IG_DAILY_CAP` env var). See `content/README.md` for
+details.
 
 **Bulk upload and auto-sort** — the dashboard's *Content campaigns* section has a
 *Bulk upload and auto-sort* tool: pick a pile of unsorted images, choose how many

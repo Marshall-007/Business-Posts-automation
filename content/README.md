@@ -65,7 +65,25 @@ Checked in this order:
 
 1. A text file with the same name as the image: `photo1.jpg` -> `photo1.txt`
 2. A `caption.txt` shared by the whole folder
-3. Otherwise a caption is generated from the business profile in `config.yaml`
+3. Otherwise a **unique randomized caption** is written for each post from a
+   Gwalava-specific pool (`src/captions.py`): a rotating body + call to action
+   + a randomized hashtag block mixing brand tags (#GwalavaBoards ...),
+   furniture-fittings niche tags (#EdgeBanding #CabinetHardware ...) and
+   high-reach viral tags (#InteriorDesign #DreamKitchen #Viral ...). Bodies
+   never repeat until the whole pool has been used, and Instagram's limits
+   (2,200 characters, 30 hashtags) are always respected.
+
+If your own caption (1 or 2) contains no `#hashtags`, a randomized tag block
+is appended to it automatically.
+
+## Safety valves
+
+- A slot more than **24 hours in the past** is never queued — so enabling a
+  campaign with an old start date can't dump weeks of posts at once. Fix the
+  start date (today or later) and the files queue normally.
+- At most **20 posts go out per rolling 24 hours** (Instagram's API allows
+  roughly 25). Anything past the cap stays pending and posts on later runs.
+  Override with the `IG_DAILY_CAP` environment variable if ever needed.
 
 ## Lifecycle
 

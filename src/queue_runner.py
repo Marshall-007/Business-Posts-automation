@@ -13,11 +13,17 @@ Runs in GitHub Actions on a short cron. Each queue item:
   attempts      failed attempts so far
 
 The workflow commits the updated queue.json and the media deletions.
+
+Safety valve: Instagram's API allows roughly 25 published posts per account
+per 24 hours. At most DAILY_CAP items (default 20, override with the
+IG_DAILY_CAP env var) are posted in any rolling 24-hour window; anything
+beyond that stays pending and goes out on later runs.
 """
 
 import json
+import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from .config import Credentials, load_business_config
@@ -26,6 +32,27 @@ from .platforms.instagram import Instagram
 QUEUE_FILE = Path(__file__).resolve().parent.parent / "data" / "queue.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MAX_ATTEMPTS = 3
+DAILY_CAP_DEFAULT = 20
+
+
+def daily_cap() -> int:
+    try:
+        return max(1, int(os.environ.get("IG_DAILY_CAP", DAILY_CAP_DEFAULT)))
+    except ValueError:
+        return DAILY_CAP_DEFAULT
+
+
+def posted_in_last_24h(items: list[dict], now: datetime) -> int:
+    count = 0
+    for it in items:
+        if it.get("status") != "posted" or not it.get("posted_at"):
+            continue
+        try:
+            if parse_ts(it["posted_at"]) > now - timedelta(hours=24):
+                count += 1
+        except ValueError:
+            continue
+    return count
 
 
 def parse_ts(value: str) -> datetime:
@@ -66,13 +93,28 @@ def process_due(
     data = load_queue(queue_path)
     items = data.get("items", [])
 
-    due = [
-        it for it in items
-        if it.get("status") == "pending" and parse_ts(it["scheduled_at"]) <= now
-    ]
+    due = sorted(
+        (
+            it for it in items
+            if it.get("status") == "pending" and parse_ts(it["scheduled_at"]) <= now
+        ),
+        key=lambda it: parse_ts(it["scheduled_at"]),
+    )
     if not due:
         print("No posts are due.")
         return items
+
+    # Stay under Instagram's daily publishing limit (rolling 24h window).
+    cap = daily_cap()
+    room = cap - posted_in_last_24h(items, now)
+    if room <= 0:
+        print(f"Daily cap of {cap} posts reached; {len(due)} due item(s) wait "
+              "for the next window.")
+        return items
+    if len(due) > room:
+        print(f"Daily cap: posting {room} of {len(due)} due item(s); the rest "
+              "go out on later runs.")
+        due = due[:room]
 
     creds = Credentials()
     business_config = load_business_config()

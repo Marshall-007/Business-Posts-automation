@@ -117,6 +117,59 @@ def test_failure_retries_then_errors_after_three_attempts(tmp_path, ig_env, monk
     assert qr.process_due(now=NOW, root=tmp_path, queue_path=qp)[0]["attempts"] == 3
 
 
+def test_daily_cap_defers_excess_posts(tmp_path, ig_env, fake_publish, monkeypatch):
+    monkeypatch.setenv("IG_DAILY_CAP", "2")
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [
+        item(tmp_path, id="a", media_path="docs/uploads/a.jpg"),
+        item(tmp_path, id="b", media_path="docs/uploads/b.jpg"),
+        item(tmp_path, id="c", media_path="docs/uploads/c.jpg"),
+    ])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert [it["status"] for it in items] == ["posted", "posted", "pending"]
+    assert len(fake_publish) == 2
+    # the deferred item posts on a later run once the window allows
+    later = NOW + timedelta(hours=25)
+    items = qr.process_due(now=later, root=tmp_path, queue_path=qp)
+    assert [it["status"] for it in items] == ["posted", "posted", "posted"]
+
+
+def test_recent_posted_items_count_against_the_cap(tmp_path, ig_env, fake_publish, monkeypatch):
+    monkeypatch.setenv("IG_DAILY_CAP", "2")
+    qp = tmp_path / "data/queue.json"
+    already = item(tmp_path, id="done", media_path="docs/uploads/done.jpg",
+                   status="posted", posted_at=(NOW - timedelta(hours=1)).isoformat())
+    write_queue(qp, [
+        already,
+        item(tmp_path, id="a", media_path="docs/uploads/a.jpg"),
+        item(tmp_path, id="b", media_path="docs/uploads/b.jpg"),
+    ])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    # 1 already posted in the window + cap 2 -> only one more goes out.
+    assert len(fake_publish) == 1
+    assert [it["status"] for it in items] == ["posted", "posted", "pending"]
+
+
+def test_due_items_post_oldest_first(tmp_path, ig_env, fake_publish):
+    qp = tmp_path / "data/queue.json"
+    newer = item(tmp_path, id="newer", media_path="docs/uploads/n.jpg",
+                 media_url="https://raw.test/n.jpg",
+                 scheduled_at=(NOW - timedelta(minutes=5)).isoformat())
+    older = item(tmp_path, id="older", media_path="docs/uploads/o.jpg",
+                 media_url="https://raw.test/o.jpg",
+                 scheduled_at=(NOW - timedelta(hours=3)).isoformat())
+    write_queue(qp, [newer, older])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert [c["url"] for c in fake_publish] == \
+        ["https://raw.test/o.jpg", "https://raw.test/n.jpg"]
+
+
 def test_unconfigured_instagram_posts_nothing(tmp_path, monkeypatch, fake_publish):
     monkeypatch.delenv("INSTAGRAM_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("INSTAGRAM_USER_ID", raising=False)

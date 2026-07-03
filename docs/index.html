@@ -84,6 +84,34 @@
   .pill.run { background: rgba(200,137,75,.2); color: var(--accent); }
   .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
   .hidden { display: none; }
+
+  /* ---- Mobile view ---- */
+  @media (max-width: 700px) {
+    header { padding: 14px 16px; gap: 8px; }
+    header h1 { font-size: 18px; }
+    main { padding: 14px 10px 48px; }
+    section { padding: 14px 12px; margin-bottom: 16px; }
+    h2 { font-size: 13px; }
+    .row { gap: 10px; }
+    .row > div { flex: 1 1 100%; min-width: 100%; }
+    /* 16px inputs stop iOS zooming on focus */
+    input[type=text], input[type=password], input[type=date], input[type=time],
+    input[type=number], input[type=file], textarea, select { font-size: 16px; }
+    button { padding: 12px 16px; font-size: 15px; }
+    .btnrow { gap: 8px; }
+    .btnrow button { flex: 1 1 auto; }
+    .flow { padding: 12px; }
+    .flow .actions button { flex: 1 1 auto; }
+    .checks { gap: 10px; }
+    /* Wide tables scroll sideways instead of breaking the page */
+    table { display: block; overflow-x: auto; white-space: nowrap;
+            -webkit-overflow-scrolling: touch; }
+    th, td { padding: 8px 8px; }
+  }
+  @media (max-width: 380px) {
+    header h1 { font-size: 16px; }
+    main { padding: 10px 8px 40px; }
+  }
 </style>
 </head>
 <body>
@@ -154,15 +182,18 @@
   <section id="content">
     <h2>Content campaigns (hands-free posting)</h2>
     <p class="note">Each campaign is a folder under content/ with its own start
-      date. Inside it, day1/posts and day1/stories post on the start date; day2
-      the next day, and so on. Drop images or videos in and they post
-      automatically, no uploading here. If a folder holds 2 files they go out 6
-      hours apart; 3 files 4 hours apart; 4+ files 3 hours apart (first at the
-      start time). Images are converted and sized automatically (.webp/.png are
-      fine; feed 1080x1080, story 1080x1920). Captions: a photo1.txt next to
-      photo1.jpg, or one caption.txt for the folder, else auto-written; stories
-      have no caption. Files are removed after posting. Queued items also appear
-      in the Queue above and can be cancelled there.</p>
+      date. A day is any folder holding a Post/Story (or posts/stories)
+      subfolder, at any depth, so Month 1/Day 1/Post works as-is. Days are
+      ordered naturally (Day 2 before Day 10) and get consecutive dates from
+      the start date. Drop images or videos in and they post automatically. If
+      a folder holds 2 files they go out 6 hours apart; 3 files 4 hours apart;
+      4+ files 3 hours apart (first at the start time). Images are converted
+      and sized automatically (.webp/.png are fine). Captions: a photo1.txt
+      next to photo1.jpg, or one caption.txt for the folder, else a unique
+      randomized Gwalava caption with niche and viral hashtags is written for
+      each post; stories have no caption. Files are removed after posting.
+      Queued items also appear in the Queue above and can be cancelled
+      there.</p>
     <div id="campaign-list"></div>
     <div class="btnrow">
       <button id="reload-content" class="ghost">Reload campaigns</button>
@@ -835,31 +866,41 @@ function loadCampaigns() {
   status("content-status", "info", "Loading campaigns...");
   return api("/repos/" + s.owner + "/" + s.repo + "/git/trees/" +
       encodeURIComponent(s.branch) + "?recursive=1").then(function (res) {
-    var camps = {};  // name -> { name, path, days: { dayRel -> {label, posts, stories} } }
+    var camps = {};  // name -> { name, path, days: { dayRel -> {...} } }
     (res.tree || []).forEach(function (node) {
       if (node.type !== "blob") return;
       var parts = node.path.split("/");
       if (parts[0] !== "content" || parts.length < 4) return;
       var file = parts[parts.length - 1];
-      var kind = folderKindJS(parts[parts.length - 2]);
-      if (!kind || !isMediaName(file)) return;
+      var kindDir = parts[parts.length - 2];
+      var kind = folderKindJS(kindDir);
+      if (!kind) return;
+      // ANY file (even a .gitkeep placeholder) establishes the day, matching
+      // the Python engine; only real media counts toward the totals.
       var dayParts = parts.slice(1, parts.length - 2);  // under content/, minus post-folder+file
       if (!dayParts.length) return;
       var name = (dayParts.length === 1 && isTopDayName(dayParts[0])) ? "" : dayParts[0];
       var dayRel = dayParts.join("/");
-      var label = name ? (dayParts.slice(1).join("/") || dayParts[0]) : dayRel;
+      // rel within the campaign folder ("" when posts sit at the campaign root)
+      var rel = name ? dayParts.slice(1).join("/") : dayRel;
+      var label = rel || name || dayRel;
       if (!camps[name]) {
         camps[name] = { name: name, path: name ? "content/" + name : "content", days: {} };
       }
       var days = camps[name].days;
-      if (!days[dayRel]) days[dayRel] = { label: label, rel: dayRel, posts: 0, stories: 0 };
+      if (!days[dayRel]) days[dayRel] = { label: label, rel: rel, sortKey: dayRel,
+                                          posts: 0, stories: 0, postDir: "", storyDir: "" };
+      if (kind === "feed") days[dayRel].postDir = kindDir; else days[dayRel].storyDir = kindDir;
+      if (!isMediaName(file)) return;
       if (kind === "feed") days[dayRel].posts++; else days[dayRel].stories++;
     });
     campaignsData = Object.keys(camps).map(function (name) {
       var c = camps[name];
       var days = Object.keys(c.days).map(function (k) { return c.days[k]; })
-        .sort(function (a, b) { return naturalKey(a.rel) < naturalKey(b.rel) ? -1 : 1; })
-        .map(function (d, i) { return { n: i + 1, name: d.label, posts: d.posts, stories: d.stories }; });
+        .sort(function (a, b) { return naturalKey(a.sortKey) < naturalKey(b.sortKey) ? -1 : 1; })
+        .map(function (d, i) { return { n: i + 1, name: d.label, rel: d.rel,
+                 posts: d.posts, stories: d.stories,
+                 postDir: d.postDir, storyDir: d.storyDir }; });
       return { name: c.name, path: c.path, days: days };
     }).sort(function (a, b) { return a.name.localeCompare(b.name); });
     el("content-status").className = "status";
@@ -905,7 +946,7 @@ function renderCampaigns() {
       : "<p class='note'>No day folders yet.</p>";
     return "<div class='flow'><h3>" + esc(c.name) + "</h3>" +
       "<div class='row'>" +
-      "<div><label>Start date (= day1)</label><input type='date' class='cf-start' data-i='" + ci + "' value='" + esc(start) + "'></div>" +
+      "<div><label>Start date (= first day)</label><input type='date' class='cf-start' data-i='" + ci + "' value='" + esc(start) + "'></div>" +
       "<div><label>Posts time (local)</label><input type='time' class='cf-pt' data-i='" + ci + "' value='" + esc(pt) + "'></div>" +
       "<div><label>Stories time (local)</label><input type='time' class='cf-st' data-i='" + ci + "' value='" + esc(st) + "'></div>" +
       "</div>" +
@@ -939,23 +980,50 @@ function saveCampaign(ci) {
   status("content-status", "info", "Saving " + c.name + "...");
   saveConfig("Update campaign: " + c.name).then(function () {
     status("content-status", "ok", enabled
-      ? c.name + " is ON. day1 posts on " + start + "."
+      ? c.name + " is ON. Its first day posts on " + start + "."
       : c.name + " saved (off).");
     renderCampaigns();
   }).catch(function (e) { status("content-status", "err", "Save failed: " + e.message); });
 }
 
+// Describe how a campaign names its day folders, so new days continue the
+// exact same pattern ("Month 1/Day 20" -> "Month 1/Day 21"). Creating a
+// differently named sibling (like "day21" next to "Month 1") would sort
+// before the existing days and shift every scheduled date.
+function dayPattern(c) {
+  var fallback = {
+    make: function (n) { return "day" + n; },
+    nextNum: (c && c.days.length ? c.days.length + 1 : 1),
+    postDir: "posts", storyDir: "stories"
+  };
+  if (!c || !c.days.length) return fallback;
+  var last = c.days[c.days.length - 1];
+  if (!last.rel) return fallback;  // media sits at the campaign root
+  var segs = last.rel.split("/");
+  var leaf = segs.pop();
+  var parent = segs.join("/");
+  var m = leaf.match(/^(.*?)(\d+)(\D*)$/);
+  return {
+    make: m
+      ? function (n) { return (parent ? parent + "/" : "") + m[1] + n + m[3]; }
+      : function (n) { return (parent ? parent + "/" : "") + leaf + " " + n; },
+    nextNum: m ? parseInt(m[2], 10) + 1 : c.days.length + 1,
+    postDir: last.postDir || "posts",
+    storyDir: last.storyDir || "stories"
+  };
+}
+
 function createNextDay(ci) {
   var c = campaignsData[ci];
-  var next = c.days.length ? Math.max.apply(null, c.days.map(function (d) { return d.n; })) + 1 : 1;
-  var dayName = "day" + next;
+  var pat = dayPattern(c);
+  var dayName = pat.make(pat.nextNum);
   var keep = b64encode("Placeholder so the folder exists. Safe to leave.\n");
   var base = c.path + "/" + dayName;
   status("content-status", "info", "Creating " + base + "...");
-  putFile(base + "/posts/.gitkeep", keep, "Create " + c.name + " " + dayName + " posts")
-    .then(function () { return putFile(base + "/stories/.gitkeep", keep, "Create " + c.name + " " + dayName + " stories"); })
+  putFile(base + "/" + pat.postDir + "/.gitkeep", keep, "Create " + c.name + " " + dayName + " posts")
+    .then(function () { return putFile(base + "/" + pat.storyDir + "/.gitkeep", keep, "Create " + c.name + " " + dayName + " stories"); })
     .then(function () {
-      status("content-status", "ok", "Created " + base + "/posts and /stories.");
+      status("content-status", "ok", "Created " + base + "/" + pat.postDir + " and /" + pat.storyDir + ".");
       loadCampaigns();
     }).catch(function (e) { status("content-status", "err", "Failed: " + e.message); });
 }
@@ -1019,9 +1087,7 @@ function updateBulkDatalist() {
 el("bulk-campaign").oninput = function () {
   var name = el("bulk-campaign").value.trim();
   var found = campaignsData.filter(function (c) { return c.name === name; })[0];
-  var maxDay = found && found.days.length
-    ? Math.max.apply(null, found.days.map(function (d) { return d.n; })) : 0;
-  el("bulk-startday").value = maxDay + 1;
+  el("bulk-startday").value = found ? dayPattern(found).nextNum : 1;
 };
 
 function computeBulkPlan() {
@@ -1045,8 +1111,10 @@ function computeBulkPlan() {
 el("bulk-plan").onclick = function () {
   var plan = computeBulkPlan();
   if (!plan.days.length) { el("bulk-plan-out").textContent = "Choose some images first."; return; }
+  var name = el("bulk-campaign").value.trim();
+  var pat = dayPattern(campaignsData.filter(function (c) { return c.name === name; })[0]);
   var lines = plan.days.map(function (d) {
-    return "day" + d.day + ": " + d.posts.length + " post(s), " + d.stories.length + " story(ies)";
+    return pat.make(d.day) + ": " + d.posts.length + " post(s), " + d.stories.length + " story(ies)";
   });
   el("bulk-plan-out").textContent =
     plan.totalPosts + " feed + " + plan.totalStories + " story image(s) -> " +
@@ -1064,19 +1132,24 @@ el("bulk-upload").onclick = async function () {
 
   status("content-status", "info", "Converting images...");
   try {
+    // Continue the campaign's existing day-folder naming so new days sort
+    // after the current ones instead of shifting the schedule.
+    var existing = campaignsData.filter(function (c) { return c.name === name; })[0];
+    var pat = dayPattern(existing);
     var stamp = Date.now();
     var files = [];
     for (var i = 0; i < plan.days.length; i++) {
       var d = plan.days[i];
+      var dayBase = "content/" + name + "/" + pat.make(d.day);
       for (var p = 0; p < d.posts.length; p++) {
         files.push({
-          path: "content/" + name + "/day" + d.day + "/posts/bulk-" + stamp + "-" + i + "-p" + p + ".jpg",
+          path: dayBase + "/" + pat.postDir + "/bulk-" + stamp + "-" + i + "-p" + p + ".jpg",
           base64: await fileToJpeg(d.posts[p], SQUARE, SQUARE)
         });
       }
       for (var q = 0; q < d.stories.length; q++) {
         files.push({
-          path: "content/" + name + "/day" + d.day + "/stories/bulk-" + stamp + "-" + i + "-s" + q + ".jpg",
+          path: dayBase + "/" + pat.storyDir + "/bulk-" + stamp + "-" + i + "-s" + q + ".jpg",
           base64: await fileToJpeg(d.stories[q], 1080, 1920)
         });
       }

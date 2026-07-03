@@ -22,7 +22,13 @@ folder's start time, the rest at an interval of 12h / file-count, clamped
 between 3 and 6 hours. So 2 files post 6h apart, 3 files 4h apart, 4+ 3h apart.
 
 Captions for feed posts: a sidecar text file (photo1.jpg -> photo1.txt), a
-folder caption.txt, or an auto-generated caption. Stories ignore captions.
+folder caption.txt (both get a randomized hashtag block appended if they have
+none), or a unique randomized Gwalava caption with brand + niche + viral tags
+(src/captions.py). Stories ignore captions.
+
+Safety: a file whose computed slot is more than PAST_GRACE_HOURS in the past
+is NOT enqueued (it would flood Instagram's daily API limit); it simply waits
+until the campaign's start date is set so its day lands today or later.
 
 Runs after content_prepare (which converts .webp/.png to JPEG), so only
 JPEG/MP4/MOV files are enqueued. A path is never enqueued twice.
@@ -36,8 +42,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
-from . import content_generator
-from .config import Credentials, load_business_config
+from .captions import CaptionPool, with_tags
 from .content_prepare import folder_kind
 from .queue_runner import QUEUE_FILE, load_queue, save_queue
 
@@ -55,6 +60,9 @@ DAY_RE = re.compile(r"(?i)^day\s*\d+$")
 DAY_SPAN_MINUTES = 720
 MIN_INTERVAL_MINUTES = 180
 MAX_INTERVAL_MINUTES = 360
+
+# Files whose slot is further in the past than this are not enqueued.
+PAST_GRACE_HOURS = 24
 
 # (post_type, campaign time key, default UTC time)
 KIND_SETTINGS = {
@@ -184,22 +192,22 @@ def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "default"
 
 
-def resolve_caption(media, folder, business_config, api_key, cache) -> str:
+def resolve_caption(media, folder, pool: CaptionPool) -> str:
+    """Sidecar text beats folder caption.txt beats a randomized caption.
+    User-written captions get a randomized tag block appended if they have
+    no hashtags of their own."""
     sidecar = media.with_suffix(".txt")
     if sidecar.is_file():
-        return sidecar.read_text(encoding="utf-8").strip()
+        return with_tags(sidecar.read_text(encoding="utf-8"), pool.rng)
     shared = folder / "caption.txt"
     if shared.is_file():
-        return shared.read_text(encoding="utf-8").strip()
-    if "generated" not in cache:
-        _, posts = content_generator.generate_posts(business_config, api_key)
-        cache["generated"] = posts.get("instagram", "")
-    return cache["generated"]
+        return with_tags(shared.read_text(encoding="utf-8"), pool.rng)
+    return pool.next_caption()
 
 
 def _enqueue_folder(
     folder, post_type, campaign_name, day_slug, day_date, config,
-    items, known_paths, root, base_url, business_config, creds, cache,
+    items, known_paths, root, base_url, pool, now,
 ):
     files = media_files(folder)
     rel_folder = str(folder.relative_to(root))
@@ -226,11 +234,20 @@ def _enqueue_folder(
         first_at = base_dt
 
     added = []
+    cutoff = now - timedelta(hours=PAST_GRACE_HOURS)
     for i, media in enumerate(new_files):
         rel = str(media.relative_to(root))
+        scheduled_at = first_at + i * step
+        if scheduled_at < cutoff:
+            # Long past its slot: leave it out of the queue so a past start
+            # date can't flood Instagram's daily limit. It enqueues normally
+            # once the campaign's start date puts its day at today or later.
+            print(f"skipping {rel}: slot {scheduled_at.isoformat(timespec='seconds')} "
+                  f"is over {PAST_GRACE_HOURS}h past; fix the campaign start date")
+            continue
         caption = ""
         if post_type == "feed":
-            caption = resolve_caption(media, folder, business_config, creds.anthropic_api_key, cache)
+            caption = resolve_caption(media, folder, pool)
         item = {
             "id": f"content_{slug(campaign_name)}_{day_slug}_{post_type}_{slug(media.stem)}",
             "source": "content",
@@ -240,7 +257,7 @@ def _enqueue_folder(
             "post_type": post_type,
             "is_video": media.suffix.lower() in VIDEO_EXTS,
             "caption": caption,
-            "scheduled_at": (first_at + i * step).isoformat(timespec="seconds"),
+            "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
             "status": "pending",
             "attempts": 0,
         }
@@ -263,9 +280,6 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
         return []
 
     configs = load_campaign_configs(root)
-    if business_config is None:
-        business_config = load_business_config()
-    creds = Credentials()
     base_url = raw_base_url(root)
 
     data = load_queue(queue_path)
@@ -273,7 +287,7 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
     known_paths = {it.get("media_path") for it in items if it.get("media_path")}
 
     campaigns = find_day_dirs(content_dir)
-    cache: dict = {}
+    pool = CaptionPool()
     added: list[dict] = []
 
     for name, day_dirs in campaigns.items():
@@ -293,8 +307,7 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
             for post_type, folder in day_subfolders(day_dir):
                 added += _enqueue_folder(
                     folder, post_type, name, day_slug, day_date, config,
-                    items, known_paths, root, base_url,
-                    business_config, creds, cache,
+                    items, known_paths, root, base_url, pool, now,
                 )
 
     if added:
