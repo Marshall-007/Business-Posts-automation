@@ -34,14 +34,26 @@
     display: flex; flex-direction: column; gap: 2px;
   }
   aside .logo { font-size: 16px; font-weight: 700; padding: 4px 10px 2px; }
-  aside .logosub { color: var(--accent); font-size: 12px; padding: 0 10px 14px; }
+  aside .logosub { color: var(--accent); font-size: 12px; padding: 0 10px 10px; }
+  aside .chip {
+    margin: 4px 10px 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--panel2); font-size: 11px;
+    color: var(--muted); overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  aside .chip b { color: var(--text); display: block; font-size: 13px;
+    overflow: hidden; text-overflow: ellipsis; }
+  aside .navgroup { color: var(--muted); font-size: 10.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; padding: 12px 12px 4px;
+    opacity: .8; }
   aside a.nav {
-    display: block; padding: 10px 12px; border-radius: 8px; color: var(--muted);
+    display: block; padding: 9px 12px; border-radius: 8px; color: var(--muted);
     text-decoration: none; font-size: 14px; font-weight: 500;
+    border-left: 3px solid transparent; transition: background .12s, color .12s;
   }
   aside a.nav:hover { background: var(--panel2); color: var(--text); }
   aside a.nav.active { background: var(--panel2); color: var(--accent);
-    border-left: 3px solid var(--accent); padding-left: 9px; }
+    border-left-color: var(--accent); }
   aside .navfoot { margin-top: auto; color: var(--muted); font-size: 11px;
     padding: 12px 10px 0; border-top: 1px solid var(--line); }
 
@@ -187,6 +199,31 @@
   .wprogress span.done { background: var(--ok); }
   .wprogress span.cur { background: var(--accent); }
 
+  /* ---- Polish ---- */
+  input[type=text]:focus, input[type=password]:focus, input[type=date]:focus,
+  input[type=time]:focus, input[type=number]:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--accent-dim);
+    box-shadow: 0 0 0 2px rgba(200,137,75,.18);
+  }
+  button { transition: background .12s, color .12s, transform .05s; }
+  button:active { transform: translateY(1px); }
+  section { box-shadow: 0 1px 0 rgba(0,0,0,.18); }
+  tbody tr:hover td { background: rgba(255,255,255,.02); }
+  .month.on { border-left: 3px solid var(--ok); }
+  .month.off { opacity: .92; }
+  .empty {
+    text-align: center; color: var(--muted); font-size: 14px;
+    border: 1px dashed var(--line); border-radius: 8px; padding: 26px 16px;
+    margin: 8px 0;
+  }
+  .empty .big { font-size: 15px; color: var(--text); font-weight: 600;
+    margin-bottom: 4px; }
+  .empty button { margin-top: 12px; }
+  .loadnote { color: var(--muted); font-size: 13px; padding: 10px 2px; }
+  .loadnote::after { content: "..."; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; }
+    50% { content: ".."; } 75% { content: "..."; } }
+
   /* ---- Mobile ---- */
   @media (max-width: 820px) {
     .shell { display: block; }
@@ -194,7 +231,7 @@
             border-right: none; border-bottom: 1px solid var(--line);
             padding: 10px 8px; position: sticky; top: 0; z-index: 20; gap: 4px; }
     aside .logo { padding: 6px 8px; font-size: 14px; }
-    aside .logosub, aside .navfoot { display: none; }
+    aside .logosub, aside .navfoot, aside .chip, aside .navgroup { display: none; }
     aside a.nav { padding: 8px 10px; font-size: 13px; }
     aside a.nav.active { border-left: none; padding-left: 10px; }
     main { padding: 14px 10px 48px; }
@@ -215,13 +252,18 @@
 <div class="shell">
 
 <aside id="sidenav">
-  <div class="logo" id="brand-title">Posts Automation</div>
-  <div class="logosub" id="brand-sub">Company workspace</div>
+  <div class="logo">Posts Automation</div>
+  <div class="logosub">Multi-company workspace</div>
+  <div class="chip">Active company<b id="chip-company">-</b></div>
+  <div class="navgroup">Workspace</div>
   <a class="nav" href="#dashboard" data-view="dashboard">Dashboard</a>
-  <a class="nav" href="#companies" data-view="companies">Companies</a>
   <a class="nav" href="#scheduled" data-view="scheduled">Scheduled Posts</a>
   <a class="nav" href="#auto" data-view="auto">Auto Posts</a>
+  <div class="navgroup">Manage</div>
+  <a class="nav" href="#companies" data-view="companies">Companies</a>
   <a class="nav" href="#admin" data-view="admin">Admin</a>
+  <div class="navgroup">Help</div>
+  <a class="nav" href="#manual" data-view="manual">User Manual</a>
   <a class="nav" href="#setup" data-view="setup">Setup Instructions</a>
   <a class="nav" href="#settings" data-view="settings">Settings</a>
   <div class="navfoot">All actions talk directly to GitHub with your token. Nothing else stores your data.</div>
@@ -254,7 +296,7 @@
     <section>
       <h2>Activity log</h2>
       <p class="lead">Every publish attempt on every platform, newest first. Failed posts show the platform's full error message.</p>
-      <div id="activity-table"><p class="note">Loading...</p></div>
+      <div id="activity-table"><p class="loadnote">Loading</p></div>
     </section>
 
     <section>
@@ -415,6 +457,125 @@
         <button id="nc-create">Add Company</button>
       </div>
       <div id="nc-status" class="status"></div>
+    </section>
+  </div>
+
+  <!-- ============ USER MANUAL ============ -->
+  <div class="view" id="view-manual">
+    <section class="doc">
+      <h2>User manual</h2>
+      <p class="lead">How to run the system day to day, in plain language. For connecting accounts and credentials, see Setup Instructions instead.</p>
+
+      <details open>
+        <summary>What this system does</summary>
+        <div class="body">
+          <p>It posts your marketing photos to <b>Instagram and Facebook</b>
+          automatically - feed posts and stories - one month of content at a
+          time. You load a month of photos once, pick a start date, tick the
+          month, and it posts every day by itself: captions are written
+          automatically with your phone number, website and hashtags, and every
+          post is mirrored to Facebook (stories land in the Page's Stories
+          ring). A robot on GitHub wakes up every 15 minutes and does the work;
+          this dashboard is your remote control.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Getting around the dashboard</summary>
+        <div class="body">
+          <ul>
+            <li><b>Dashboard</b> - the day's numbers, the activity log (every post and any errors), and the latest automation runs.</li>
+            <li><b>Scheduled Posts</b> - everything waiting to publish, with dates and cancel buttons.</li>
+            <li><b>Auto Posts</b> - your campaigns and months; this is where you load content and switch months on.</li>
+            <li><b>Companies</b> - switch between the businesses you manage and run their guided setup.</li>
+            <li><b>Admin</b> - add a brand-new company (its repository is created automatically).</li>
+            <li><b>User Manual / Setup Instructions</b> - this guide, and the credentials guide.</li>
+            <li><b>Settings</b> - the GitHub connection for the active company.</li>
+          </ul>
+          <p>The left menu's <b>Active company</b> chip always shows which business you are working on.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Post a month of content (the everyday job)</summary>
+        <div class="body">
+          <ol>
+            <li>Open <b>Auto Posts</b>.</li>
+            <li>Scroll to <b>Bulk upload and auto-sort</b>. Pick the campaign (or type a new name), and keep the suggested month (e.g. <code>Month 2</code>).</li>
+            <li>Choose your <b>feed images</b> (the polished ones for the grid) and your <b>story images</b> (the casual ones). Pick 2 or 3 per day for each.</li>
+            <li>Press <b>Preview plan</b> to see how they will be split into days, then <b>Sort and upload</b>.</li>
+            <li>When the upload finishes, find the new month card above. Set its <b>start date</b>, tick <b>Instagram</b> and <b>Facebook</b>, tick the <b>month's checkbox</b>, and press <b>Save campaign</b>.</li>
+            <li>Done. Day 1 posts on the start date, day 2 the next day, and so on. Open the <b>Day-by-day plan</b> inside the month card any time to see exactly what posts when.</li>
+          </ol>
+          <p><b>Timing:</b> feed posts start at the campaign's "Posts time", stories at the "Stories time". If a day has 2 files they go out 6 hours apart; 3 files, 4 hours apart.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Pause, resume, or fix a mistake</summary>
+        <div class="body">
+          <ul>
+            <li><b>Pause a month:</b> untick its checkbox and Save. Already-queued posts can be cancelled under Scheduled Posts.</li>
+            <li><b>Cancel one post:</b> Scheduled Posts, press <b>Cancel</b> on the row. The photo is removed too.</li>
+            <li><b>Wrong start date before anything posted:</b> change the date and Save - future days follow the new date. Posts already in the queue keep their old time; cancel them if needed and they re-queue on the next run.</li>
+            <li><b>Post something right now:</b> Scheduled Posts, <b>Process due posts now</b> pushes out anything overdue; Dashboard, <b>Post now</b> publishes a one-off standard post.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Reading the activity log</summary>
+        <div class="body">
+          <p>Dashboard, <b>Activity log</b>. Every attempt is one row: when, which
+          platform, feed or story, and the result. A green <b>posted</b> row shows
+          the platform's post id. A red <b>failed</b> row shows the platform's own
+          error message - read it, it usually says exactly what is wrong (for
+          example an expired token or a permission the Page is missing). Failed
+          posts retry automatically up to three times.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Add a new company (about 30 minutes end to end)</summary>
+        <div class="body">
+          <ol>
+            <li><b>Admin</b>: fill in the business name, what it does, phone and website, then <b>Add Company</b>. Its repository is created automatically on the <code>main</code> branch, captions personalized, starter data cleared.</li>
+            <li><b>Companies</b>: press <b>Guided setup</b> on the new card. The wizard walks you through the GitHub token, Facebook Page, Instagram and GitHub Pages, verifying each step - all tokens are made long-lived or permanent automatically.</li>
+            <li><b>Auto Posts</b>: bulk-upload their first month, set the date and platforms, tick, Save.</li>
+          </ol>
+          <p>From then on the new company runs itself, exactly like the first one.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Troubleshooting</summary>
+        <div class="body">
+          <table>
+            <thead><tr><th>Symptom</th><th>What to check</th></tr></thead>
+            <tbody>
+            <tr><td>Nothing is posting</td><td>Auto Posts: is the month ticked, with a start date that is today or later? Scheduled Posts: are items pending with future times? Dashboard: any red rows in the activity log?</td></tr>
+            <tr><td>A post failed with a token error</td><td>Run the company's Guided setup again from that platform's step - paste a fresh token; it is upgraded and verified for you.</td></tr>
+            <tr><td>Stories on Facebook are not visible</td><td>Page stories show in the Facebook mobile app's Stories ring and expire after 24h; the activity log's post id proves it published.</td></tr>
+            <tr><td>Dashboard says "No access token set"</td><td>Settings: paste the company's GitHub token and Save, or switch to the company under Companies.</td></tr>
+            <tr><td>An upload seems stuck</td><td>Large batches take a minute (one commit per upload). Check the status line under the buttons; reload and retry if it errored.</td></tr>
+            <tr><td>Posted fewer items than expected today</td><td>The safety cap allows at most 20 posts per rolling 24 hours; the rest go out on the next runs automatically.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <details>
+        <summary>Good-to-know rules the system enforces</summary>
+        <div class="body">
+          <ul>
+            <li>Photos are converted and resized automatically; feed keeps its natural shape, stories become 1080x1920.</li>
+            <li>Each photo is deleted from storage after it posts - the repo does not fill up.</li>
+            <li>Captions never repeat back to back, always include your contact line, and stay within Instagram's limits.</li>
+            <li>A month whose dates are long past will not flood out old posts; fix the start date and it schedules from there.</li>
+            <li>Instagram tokens renew themselves weekly; permanent Facebook Page tokens never expire.</li>
+          </ul>
+        </div>
+      </details>
     </section>
   </div>
 
@@ -660,7 +821,8 @@ function loadSettings() {
 function updateBadge(name) {
   var s = settings();
   el("company-badge").textContent = (name ? name + "  -  " : "") + s.owner + "/" + s.repo;
-  if (name) { el("brand-title").textContent = name; document.title = name + " - Posts Automation"; }
+  el("chip-company").textContent = name || (s.owner + "/" + s.repo);
+  if (name) { document.title = name + " - Posts Automation"; }
 }
 
 function saveSettings(name) {
@@ -709,10 +871,11 @@ function apiWith(token, path, options) {
 }
 
 // ---- Router (one section visible at a time) ----
-var VIEWS = ["dashboard", "companies", "scheduled", "auto", "admin", "setup", "settings"];
+var VIEWS = ["dashboard", "companies", "scheduled", "auto", "admin", "manual", "setup", "settings"];
 var VIEW_TITLES = {
   dashboard: "Dashboard", companies: "Companies", scheduled: "Scheduled Posts",
-  auto: "Auto Posts", admin: "Admin", setup: "Setup Instructions", settings: "Settings"
+  auto: "Auto Posts", admin: "Admin", manual: "User Manual",
+  setup: "Setup Instructions", settings: "Settings"
 };
 
 function route() {
@@ -871,7 +1034,9 @@ function renderQueue() {
   var wrap = el("queue-list");
   wrap.innerHTML = "";
   if (!queueState.items.length) {
-    wrap.innerHTML = "<p class='note'>Queue is empty. Enable a month under Auto Posts and it fills automatically.</p>";
+    wrap.innerHTML = "<div class='empty'><div class='big'>Nothing scheduled yet</div>" +
+      "Tick a month under Auto Posts and the queue fills itself." +
+      "<br><button onclick=\"location.hash='#auto'\">Go to Auto Posts</button></div>";
     return;
   }
   var rows = queueState.items.map(function (it) {
@@ -1063,7 +1228,8 @@ function monthsOf(c) {
 function renderCampaigns() {
   var wrap = el("campaign-list");
   if (!campaignsData.length) {
-    wrap.innerHTML = "<p class='note'>No campaigns yet. Create one below, then bulk-upload a month of content.</p>";
+    wrap.innerHTML = "<div class='empty'><div class='big'>No campaigns yet</div>" +
+      "Create one below, then bulk-upload a month of photos and switch it on.</div>";
     return;
   }
   var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -1105,7 +1271,7 @@ function renderCampaigns() {
           platformIcon(p) + PLATFORM_LABELS[p] + "</label>";
       }).join("");
 
-      return "<div class='month' data-mkey='" + esc(m.key) + "'>" +
+      return "<div class='month " + (enabled ? "on" : "off") + "' data-mkey='" + esc(m.key) + "'>" +
         "<div class='mhead'>" +
         "<label style='display:flex;align-items:center;gap:8px;margin:0;'>" +
         "<input type='checkbox' class='mb-en' data-c='" + ci + "' data-m='" + mi + "'" +

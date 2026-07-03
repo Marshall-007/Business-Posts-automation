@@ -3,7 +3,8 @@
 Automatically generates and publishes business social-media posts on a schedule.
 
 **Project status, roadmap and the new-client onboarding recipe live in
-[STATUS.md](STATUS.md).**
+[STATUS.md](STATUS.md). The day-to-day guide is [USER_MANUAL.md](USER_MANUAL.md)
+(also built into the dashboard under User Manual).**
 
 **Multi-company:** the dashboard ships with an **Admin portal**
 (`docs/admin.html`) that manages every business you automate - each company
