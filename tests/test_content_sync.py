@@ -104,6 +104,58 @@ def test_days_map_to_consecutive_dates_in_natural_order(tmp_path, ig_env, busine
     assert by_path["posts/c.jpg"]["scheduled_at"].startswith("2026-07-12")   # Day 10 (3rd)
 
 
+def test_month_batches_post_independently(tmp_path, ig_env, business_config):
+    # Each checked month posts from its own start date to its own platforms;
+    # unchecked months stay silent.
+    qp = write_campaigns(tmp_path, {"WC": {
+        **CFG,
+        "platforms": ["instagram", "facebook", "tiktok"],
+        "batches": {
+            "Month 1": {"enabled": True, "start_date": "2026-07-10",
+                         "platforms": ["instagram", "facebook"]},
+            "Month 2": {"enabled": False, "start_date": "2026-08-10"},
+        },
+    }})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+    write(tmp_path / "content/WC/Month 1/Day 2/Post/b.jpg")
+    write(tmp_path / "content/WC/Month 2/Day 1/Post/c.jpg")
+
+    added = run(tmp_path, qp, business_config)
+
+    names = [it["media_path"].split("/")[-1] for it in added]
+    assert sorted(names) == ["a.jpg", "b.jpg"]          # Month 2 unchecked
+    by = {n: it for n, it in zip(names, added)}
+    assert by["a.jpg"]["scheduled_at"].startswith("2026-07-10")
+    assert by["b.jpg"]["scheduled_at"].startswith("2026-07-11")
+    assert all(it["platforms"] == ["instagram", "facebook"] for it in added)
+
+    # Enabling Month 2 later queues it from ITS OWN start date (not day 3).
+    write_campaigns(tmp_path, {"WC": {
+        **CFG,
+        "batches": {
+            "Month 1": {"enabled": True, "start_date": "2026-07-10"},
+            "Month 2": {"enabled": True, "start_date": "2026-08-10"},
+        },
+    }})
+    more = run(tmp_path, qp, business_config)
+    assert len(more) == 1
+    assert more[0]["scheduled_at"].startswith("2026-08-10")
+    assert more[0]["platforms"] == ["instagram", "facebook", "tiktok"]  # default
+
+
+def test_batches_ignore_campaign_level_enabled_switch(tmp_path, ig_env, business_config):
+    # With batches configured, only month checkboxes matter; a month with no
+    # batch entry does not post even if the campaign-level flag is on.
+    qp = write_campaigns(tmp_path, {"WC": {
+        **CFG, "enabled": True,
+        "batches": {"Month 1": {"enabled": False, "start_date": "2026-07-10"}},
+    }})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+    write(tmp_path / "content/WC/Month 9/Day 1/Post/z.jpg")   # no batch entry
+
+    assert run(tmp_path, qp, business_config) == []
+
+
 def test_nested_month_day_post_story(tmp_path, ig_env, business_config):
     # The user's real layout: content/<Campaign>/Month 1/Day N/Post|Story.
     qp = write_campaigns(tmp_path, {"WC": CFG})

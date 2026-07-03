@@ -2,6 +2,16 @@
 
 Automatically generates and publishes business social-media posts on a schedule.
 
+**Project status, roadmap and the new-client onboarding recipe live in
+[STATUS.md](STATUS.md).**
+
+**Multi-company:** the dashboard ships with an **Admin portal**
+(`docs/admin.html`) that manages every business you automate - each company
+gets its own copy of this repo (created from the portal in one click), its own
+dashboard, content, captions and secrets. Captions and contact details are
+configured per company in `config.yaml` (`captions:` section), so no code
+changes are ever needed for a new client.
+
 - **Content generation** — posts are written by Claude (Anthropic API) using your
   business profile in `config.yaml`. If no API key is configured, it falls back to
   the template posts in `config.yaml`.
@@ -66,10 +76,11 @@ content/William Collins Ghost 1/Month 1/Day 2/...       -> the next day, and so 
 content/Another Campaign/Day 1/posts/                   -> add as many campaigns as you like
 ```
 
-Day folders are ordered naturally ("Day 2" before "Day 10", "Month 1" before
-"Month 2") and assigned consecutive dates from the campaign's start date. Add
-campaigns and set each one's start date and daily times in the dashboard's
-*Content campaigns* section (stored in `data/campaigns.json`), and enable each.
+Scheduling is controlled **per month**: in the dashboard each month (batch) has
+its own checkbox, start date, and platform selection (Instagram / Facebook /
+TikTok) - only checked months post, day 1 on that month's start date, day 2 the
+next day, and so on (days ordered naturally, "Day 2" before "Day 10"). Stored
+in `data/campaigns.json` under each campaign's `batches`.
 Multiple files in one folder
 spread across the day automatically: 2 files post 6h apart, 3 files 4h apart,
 4+ files 3h apart. Images are converted to JPEG and sized automatically

@@ -1,13 +1,27 @@
-"""Randomized Instagram captions for Gwalava Boards and Furniture Fittings.
+"""Randomized captions with brand, niche and viral hashtags.
 
 Every auto-posted feed photo gets a unique caption assembled from a pool of
-Gwalava-specific bodies, a rotating call to action, and a randomized hashtag
-block: brand tags + furniture/fittings niche tags + high-reach "viral" tags.
+caption bodies, a rotating call to action, and a randomized hashtag block:
+brand tags + niche tags + high-reach "viral" tags.
 
 Bodies are drawn without replacement (reshuffled once the pool runs out), so
 back-to-back posts never share a caption -- Instagram down-ranks and can flag
 duplicated captions. Output respects Instagram's hard limits: max 2,200
 characters and max 30 hashtags.
+
+Multi-company: everything below (contact details, bodies, CTAs, tag pools) can
+be overridden per business in config.yaml under a `captions:` section, so a
+new client only edits config.yaml -- never this file. The built-in defaults
+are for Gwalava Boards and Furniture Fittings.
+
+    captions:
+      contact_phone: "0813471724"
+      contact_url: "https://example.com/"
+      bodies: [ ... ]        # caption texts
+      ctas: [ ... ]          # calls to action
+      brand_tags: [ ... ]    # e.g. "#YourBrand"
+      niche_tags: [ ... ]
+      viral_tags: [ ... ]
 """
 
 import random
@@ -15,9 +29,20 @@ import random
 MAX_CAPTION_CHARS = 2200
 MAX_HASHTAGS = 30
 
+
+def _overrides() -> dict:
+    try:
+        from .config import load_business_config
+        return (load_business_config() or {}).get("captions") or {}
+    except Exception:
+        return {}
+
+
+_OV = _overrides()
+
 # Contact details appended to every caption by default.
-CONTACT_PHONE = "0813471724"
-CONTACT_URL = "https://marshall-007.github.io/Gwalava-Boards/"
+CONTACT_PHONE = _OV.get("contact_phone") or "0813471724"
+CONTACT_URL = _OV.get("contact_url") or "https://marshall-007.github.io/Gwalava-Boards/"
 CONTACT_LINE = f"Call us on {CONTACT_PHONE}\n{CONTACT_URL}"
 
 CAPTION_BODIES = [
@@ -135,12 +160,24 @@ VIRAL_TAGS = [
 ]
 
 
+# Per-business overrides from config.yaml (captions: section).
+CAPTION_BODIES = list(_OV.get("bodies") or CAPTION_BODIES)
+CTAS = list(_OV.get("ctas") or CTAS)
+BRAND_TAGS = list(_OV.get("brand_tags") or BRAND_TAGS)
+NICHE_TAGS = list(_OV.get("niche_tags") or NICHE_TAGS)
+VIRAL_TAGS = list(_OV.get("viral_tags") or VIRAL_TAGS)
+
+
+def _sample(rng: random.Random, pool: list, n: int) -> list:
+    return rng.sample(pool, min(n, len(pool)))
+
+
 def hashtag_block(rng: random.Random | None = None) -> str:
     """A randomized tag block: brand + niche + viral, capped at MAX_HASHTAGS."""
     rng = rng or random.Random()
-    tags = rng.sample(BRAND_TAGS, 3)
-    tags += rng.sample(NICHE_TAGS, 6)
-    tags += rng.sample(VIRAL_TAGS, 6)
+    tags = _sample(rng, BRAND_TAGS, 3)
+    tags += _sample(rng, NICHE_TAGS, 6)
+    tags += _sample(rng, VIRAL_TAGS, 6)
     return " ".join(tags[:MAX_HASHTAGS])
 
 

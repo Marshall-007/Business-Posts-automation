@@ -77,6 +77,20 @@ DEFAULTS = {
     "stories_time_utc": "10:00",
 }
 
+ALL_PLATFORMS = ["instagram", "facebook", "tiktok"]
+
+
+def batch_key_for(day_dir: Path, campaign_dir: Path) -> str:
+    """The batch (month) a day belongs to: the first folder level under the
+    campaign, when the day sits deeper than that ("Month 1/Day 3" -> "Month 1").
+    Days directly under the campaign (or the campaign root itself) have no
+    batch ("")."""
+    try:
+        parts = day_dir.relative_to(campaign_dir).parts
+    except ValueError:
+        return ""
+    return parts[0] if len(parts) > 1 else ""
+
 
 def load_campaign_configs(root: Path) -> dict:
     """Return {campaign_name: config}. "" is the default (content/dayN)."""
@@ -235,6 +249,7 @@ def _enqueue_folder(
 
     added = []
     cutoff = now - timedelta(hours=PAST_GRACE_HOURS)
+    platforms = list(config.get("_platforms") or ALL_PLATFORMS)
     for i, media in enumerate(new_files):
         rel = str(media.relative_to(root))
         scheduled_at = first_at + i * step
@@ -256,6 +271,7 @@ def _enqueue_folder(
             "media_url": base_url + quote(rel),
             "post_type": post_type,
             "is_video": media.suffix.lower() in VIDEO_EXTS,
+            "platforms": platforms,
             "caption": caption,
             "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
             "status": "pending",
@@ -292,23 +308,51 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
 
     for name, day_dirs in campaigns.items():
         config = {**DEFAULTS, **configs.get(name, {})}
-        if not config.get("enabled"):
-            continue
-        try:
-            start = date.fromisoformat(config.get("start_date", ""))
-        except ValueError:
-            print(f"Campaign {name or '(default)'} has no valid start_date; skipping.",
-                  file=sys.stderr)
-            continue
+        campaign_dir = content_dir / name if name else content_dir
+        batches = config.get("batches") or {}
 
-        for index, day_dir in enumerate(day_dirs):
-            day_date = start + timedelta(days=index)
-            day_slug = slug(str(day_dir.relative_to(content_dir / name if name else content_dir)))
-            for post_type, folder in day_subfolders(day_dir):
-                added += _enqueue_folder(
-                    folder, post_type, name, day_slug, day_date, config,
-                    items, known_paths, root, base_url, pool, now,
-                )
+        if batches:
+            # Month-level control: group days by their batch (month) folder,
+            # preserving natural order within each. Only checked months post,
+            # each from its own start date and to its own platform list.
+            groups: dict[str, list[Path]] = {}
+            for day_dir in day_dirs:
+                groups.setdefault(batch_key_for(day_dir, campaign_dir), []).append(day_dir)
+            plans = []
+            for bkey, bdays in groups.items():
+                bcfg = batches.get(bkey) or {}
+                if not bcfg.get("enabled"):
+                    continue
+                try:
+                    bstart = date.fromisoformat(bcfg.get("start_date", ""))
+                except ValueError:
+                    print(f"Batch {name}/{bkey or '(root)'} has no valid start_date; "
+                          "skipping.", file=sys.stderr)
+                    continue
+                bplatforms = bcfg.get("platforms") or config.get("platforms") or ALL_PLATFORMS
+                plans.append((bdays, bstart, bplatforms))
+        else:
+            # Legacy: one switch and start date for the whole campaign.
+            if not config.get("enabled"):
+                continue
+            try:
+                start = date.fromisoformat(config.get("start_date", ""))
+            except ValueError:
+                print(f"Campaign {name or '(default)'} has no valid start_date; skipping.",
+                      file=sys.stderr)
+                continue
+            plans = [(day_dirs, start, config.get("platforms") or ALL_PLATFORMS)]
+
+        for plan_days, plan_start, plan_platforms in plans:
+            plan_config = {**config, "_platforms": plan_platforms}
+            for index, day_dir in enumerate(plan_days):
+                day_date = plan_start + timedelta(days=index)
+                day_slug = slug(str(day_dir.relative_to(campaign_dir)))
+                for post_type, folder in day_subfolders(day_dir):
+                    added += _enqueue_folder(
+                        folder, post_type, name, day_slug, day_date, plan_config,
+                        items, known_paths, root, base_url, pool, now,
+                    )
 
     if added:
         data["items"] = items

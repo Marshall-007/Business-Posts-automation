@@ -84,6 +84,31 @@
   .pill.run { background: rgba(200,137,75,.2); color: var(--accent); }
   .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
   .hidden { display: none; }
+  .picon { width: 15px; height: 15px; vertical-align: -2px; fill: currentColor;
+           margin-right: 5px; }
+  .month { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+           margin-top: 12px; background: var(--panel); }
+  .month .mhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .month .mhead .mname { font-weight: 600; font-size: 15px; }
+  .month .mhead .mcount { color: var(--muted); font-size: 13px; }
+  .month details { margin-top: 10px; }
+  .month summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .platchecks { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+  .platchecks label { display: flex; align-items: center; gap: 6px; margin: 0;
+                      color: var(--text); font-size: 14px; }
+  .platchecks input { width: auto; }
+  header nav { margin-left: auto; }
+  header nav a { color: var(--accent); font-size: 14px; text-decoration: none;
+                 border: 1px solid var(--line); padding: 6px 12px; border-radius: 8px; }
+  header nav a:hover { background: var(--panel2); }
+  .hint { margin: 8px 0 14px; border: 1px dashed var(--line); border-radius: 8px;
+          padding: 8px 12px; background: rgba(200,137,75,.05); }
+  .hint summary { cursor: pointer; color: var(--accent); font-size: 13px;
+                  font-weight: 600; }
+  .hint p, .hint ul { color: var(--muted); font-size: 13px; margin: 8px 0 2px; }
+  .hint ul { padding-left: 18px; }
+  .hint li { margin: 3px 0; }
+  .lead { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
 
   /* ---- Mobile view ---- */
   @media (max-width: 700px) {
@@ -116,13 +141,22 @@
 </head>
 <body>
 <header>
-  <h1>Gwalava Boards</h1>
+  <h1 id="brand-title">Gwalava Boards</h1>
   <span class="sub">Posts Dashboard</span>
+  <nav><a href="admin.html">Admin portal</a></nav>
 </header>
 <main>
 
   <section id="setup">
     <h2>Connection</h2>
+    <p class="lead">Connect this dashboard to the company's GitHub repository. Everything else needs this first.</p>
+    <details class="hint"><summary>How this works</summary>
+      <ul>
+        <li>The dashboard is a plain web page: it talks directly to the GitHub API with the token you paste here. There is no other server.</li>
+        <li>The token needs Actions: read/write and Contents: read/write on this one repository only.</li>
+        <li>Managing several companies? Use the Admin portal (top right) to save each company and jump between their dashboards.</li>
+      </ul>
+    </details>
     <div class="row">
       <div>
         <label for="owner">Owner</label>
@@ -149,7 +183,13 @@
 
   <section id="run">
     <h2>Trigger a run now</h2>
-    <p class="note">Runs the posting workflow on GitHub. Choose a flow below, or run the standard post to every configured platform.</p>
+    <p class="lead">Post immediately instead of waiting for the schedule.</p>
+    <details class="hint"><summary>How this works</summary>
+      <p>Fires the GitHub Actions posting workflow right now. The standard post
+      writes a caption from the business profile and publishes to every
+      configured platform. The scheduler also runs by itself every 15 minutes,
+      so this button is only for "post something now".</p>
+    </details>
     <div class="btnrow">
       <button id="run-standard">Run standard post</button>
     </div>
@@ -157,13 +197,16 @@
   </section>
 
   <section id="schedule">
-    <h2>Schedule Instagram posts</h2>
-    <p class="note">Add up to three images or videos with a day/time for each,
-      and choose Feed or Story. Media is uploaded to your repo, posted at the
-      chosen time, then removed. Feed images are squared to 1080x1080; Story
-      images are sized to 1080x1920. Feed videos post as Reels; Story videos
-      post as Stories (MP4/MOV, under 40 MB). Stories vanish after 24 hours and
-      ignore the caption. Requires the repo to be Public.</p>
+    <h2>Schedule one-off posts</h2>
+    <p class="lead">Hand-pick up to three images or videos and give each a day and time. Good for one-off promos; use Content campaigns below for hands-free monthly posting.</p>
+    <details class="hint"><summary>How this works</summary>
+      <ul>
+        <li>Each file is sized automatically (feed 1080x1080, story 1080x1920), uploaded to the repo, posted at its chosen time, then deleted.</li>
+        <li>Feed videos post as Reels; story videos post as Stories (MP4/MOV, under 40 MB). Stories vanish after 24 hours and ignore the caption.</li>
+        <li>Everything also mirrors to Facebook (and feed items to TikTok) when those platforms are connected.</li>
+        <li>The Queue below lists everything waiting to post, from this section and from campaigns; pending items can be cancelled.</li>
+      </ul>
+    </details>
     <div id="slots"></div>
     <div class="btnrow">
       <button id="schedule-all">Schedule these posts</button>
@@ -181,21 +224,20 @@
 
   <section id="content">
     <h2>Content campaigns (hands-free posting)</h2>
-    <p class="note">Each campaign is a folder under content/ with its own start
-      date. A day is any folder holding a Post/Story (or posts/stories)
-      subfolder, at any depth, so Month 1/Day 1/Post works as-is. Days are
-      ordered naturally (Day 2 before Day 10) and get consecutive dates from
-      the start date. Drop images or videos in and they post automatically. If
-      a folder holds 2 files they go out 6 hours apart; 3 files 4 hours apart;
-      4+ files 3 hours apart (first at the start time). Images are converted
-      and sized automatically (.webp/.png are fine). Captions: a photo1.txt
-      next to photo1.jpg, or one caption.txt for the folder, else a unique
-      randomized Gwalava caption with niche and viral hashtags is written for
-      each post; stories have no caption. Files are removed after posting.
-      Queued items also appear in the Queue above and can be cancelled
-      there. When the Facebook secrets are set, every post is also mirrored to
-      your Facebook Page automatically; when the TikTok secrets are set, feed
-      photos and videos are also posted to TikTok.</p>
+    <p class="lead">Hands-free posting, one month at a time: tick a month's
+      checkbox, give it a start date, choose its platforms, and it posts
+      itself day by day.</p>
+    <details class="hint"><summary>How this works</summary>
+      <ul>
+        <li>A campaign is a folder under content/. Inside it, months (Month 1, Month 2...) hold day folders, and each day holds a Post and a Story folder of images/videos.</li>
+        <li>Each month is a batch with its own checkbox, start date, and platform selection: only checked months post, day 1 on the month's start date, day 2 the next day, and so on.</li>
+        <li>Within one day: 2 files go out 6 hours apart, 3 files 4 hours apart, 4+ files 3 hours apart, starting at the posts/stories times set above the months.</li>
+        <li>Captions: a photo1.txt next to photo1.jpg, or one caption.txt per folder, else a unique randomized caption with brand, niche and viral hashtags plus your contact details is written for every post. Stories have no caption.</li>
+        <li>Images are converted and sized automatically (.webp/.png are fine); each file is deleted from the repo after it posts.</li>
+        <li>Platform icons on each month show where it posts: Instagram, Facebook (feed + stories), TikTok (feed only; TikTok has no stories API).</li>
+        <li>Safety: months whose dates are long past are not flooded out, and at most 20 posts go out per 24 hours.</li>
+      </ul>
+    </details>
     <div id="campaign-list"></div>
     <div class="btnrow">
       <button id="reload-content" class="ghost">Reload campaigns</button>
@@ -204,18 +246,24 @@
 
     <div style="margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
       <h2 style="margin-bottom:6px;">Bulk upload and auto-sort</h2>
-      <p class="note">Select a pile of unsorted images and they are sorted into
-        day folders for a campaign: feed images fill posts (2 or 3 per day),
-        story images fill stories (2 or 3 per day), creating day1, day2, day3...
-        as needed. Feed images are sized to 1080x1080, story images to
-        1080x1920, and everything is committed in one go. If the campaign name
-        is new it is created. After uploading, set the campaign's start date and
-        enable it.</p>
+      <p class="lead">Drop a pile of unsorted photos here and they are sorted
+        into a month of day folders, ready to schedule.</p>
+      <details class="hint"><summary>How this works</summary>
+        <ul>
+          <li>Pick the campaign and the month to fill: an existing month continues its own day numbering; a new month (e.g. Month 2) is created starting at Day 1.</li>
+          <li>Feed images fill each day's Post folder (2 or 3 per day) and story images the Story folder; everything is sized and committed in one go.</li>
+          <li>New campaigns and months are registered automatically, unchecked, so nothing posts until you set the month's date, tick it, and Save.</li>
+        </ul>
+      </details>
       <div class="row">
         <div><label>Campaign</label>
           <input id="bulk-campaign" list="bulk-campaign-list" autocomplete="off"
             placeholder="type a name or pick one">
           <datalist id="bulk-campaign-list"></datalist></div>
+        <div><label>Month (existing or new)</label>
+          <input id="bulk-month" list="bulk-month-list" autocomplete="off"
+            placeholder="e.g. Month 2">
+          <datalist id="bulk-month-list"></datalist></div>
         <div><label>Feed posts per day</label>
           <select id="bulk-ppd"><option>2</option><option>3</option></select></div>
         <div><label>Stories per day</label>
@@ -247,6 +295,12 @@
 
   <section id="flows">
     <h2>Flows</h2>
+    <p class="lead">Saved posting presets: a fixed caption, image, and platform mix you can fire with one click.</p>
+    <details class="hint"><summary>How this works</summary>
+      <p>A flow is a reusable preset (for example "Weekly promo" with a set
+      caption and image). Run one from here any time; it publishes through the
+      same workflow as everything else. Flows live in data/flows.json.</p>
+    </details>
     <div id="flow-list"></div>
     <div class="btnrow">
       <button id="new-flow">Add flow</button>
@@ -287,6 +341,12 @@
 
   <section id="runs">
     <h2>Recent runs</h2>
+    <p class="lead">The last few workflow runs on GitHub, with links to their logs.</p>
+    <details class="hint"><summary>How this works</summary>
+      <p>Every post happens inside a GitHub Actions run. If something did not
+      post, open the run here and read its log; failed items also show an
+      error in the Queue with up to three automatic retries.</p>
+    </details>
     <div id="runs-table"></div>
     <div class="btnrow">
       <button id="refresh-runs" class="ghost">Refresh</button>
@@ -325,10 +385,17 @@ function loadSettings() {
   var saved;
   try { saved = JSON.parse(localStorage.getItem("gwalava_dash") || "{}"); }
   catch (e) { saved = {}; }
-  el("owner").value = saved.owner || DEFAULTS.owner;
-  el("repo").value = saved.repo || DEFAULTS.repo;
-  el("branch").value = saved.branch || DEFAULTS.branch;
+  // The admin portal opens one dashboard per company via query parameters,
+  // e.g. index.html?owner=X&repo=Y&branch=main&name=Client — those win.
+  var q = new URLSearchParams(location.search);
+  el("owner").value = q.get("owner") || saved.owner || DEFAULTS.owner;
+  el("repo").value = q.get("repo") || saved.repo || DEFAULTS.repo;
+  el("branch").value = q.get("branch") || saved.branch || DEFAULTS.branch;
   el("token").value = saved.token || DEFAULTS.token;
+  if (q.get("name")) {
+    el("brand-title").textContent = q.get("name");
+    document.title = q.get("name") + " Posts Dashboard";
+  }
 }
 
 function saveSettings() {
@@ -924,40 +991,75 @@ function renderCampaigns() {
   var today = new Date(); today.setHours(0, 0, 0, 0);
   wrap.innerHTML = campaignsData.map(function (c, ci) {
     var cfg = configState.campaigns[c.name] || {};
-    var start = cfg.start_date || "";
-    var pt = utcToLocal(start, cfg.posts_time_utc || "07:00");
-    var st = utcToLocal(start, cfg.stories_time_utc || "10:00");
-    var startD = start ? new Date(start + "T00:00:00") : null;
-    var planRows = c.days.map(function (d) {
-      var dl = "-", state = "set a date", cls = "run";
-      if (startD) {
-        var dt = new Date(startD); dt.setDate(dt.getDate() + (d.n - 1));
-        dl = dt.toDateString();
-        if (dt < today) { state = "past"; cls = "err"; }
-        else if (dt.getTime() === today.getTime()) { state = "today"; cls = "ok"; }
-        else { state = "upcoming"; cls = "run"; }
-      }
-      return "<tr><td>" + esc(d.name) + "</td><td>" + esc(dl) + "</td>" +
-        "<td>" + d.posts + " (" + spacingLabel(d.posts) + ")</td>" +
-        "<td>" + d.stories + " (" + spacingLabel(d.stories) + ")</td>" +
-        "<td><span class='pill " + cls + "'>" + esc(state) + "</span></td></tr>";
+    var batches = cfg.batches || {};
+    var pt = utcToLocal("", cfg.posts_time_utc || "07:00");
+    var st = utcToLocal("", cfg.stories_time_utc || "10:00");
+
+    var monthsHtml = monthsOf(c).map(function (m, mi) {
+      var mcfg = batches[m.key] || {};
+      // Fall back to the legacy campaign-level settings for old configs.
+      var enabled = ("enabled" in mcfg) ? !!mcfg.enabled : (!Object.keys(batches).length && !!cfg.enabled);
+      var start = mcfg.start_date || (!Object.keys(batches).length ? (cfg.start_date || "") : "");
+      var plats = mcfg.platforms || cfg.platforms || PLATFORMS.slice();
+      var startD = start ? new Date(start + "T00:00:00") : null;
+      var posts = 0, stories = 0;
+      m.days.forEach(function (d) { posts += d.posts; stories += d.stories; });
+
+      var rows = m.days.map(function (d, di) {
+        var dl = "-", state = "set a date", cls = "run";
+        if (startD) {
+          var dt = new Date(startD); dt.setDate(dt.getDate() + di);
+          dl = dt.toDateString();
+          if (dt < today) { state = "past"; cls = "err"; }
+          else if (dt.getTime() === today.getTime()) { state = "today"; cls = "ok"; }
+          else { state = "upcoming"; cls = "run"; }
+        }
+        var label = m.key ? d.name.replace(m.key + "/", "") : (d.name || "(campaign root)");
+        return "<tr><td>" + esc(label) + "</td><td>" + esc(dl) + "</td>" +
+          "<td>" + d.posts + " (" + spacingLabel(d.posts) + ")</td>" +
+          "<td>" + d.stories + " (" + spacingLabel(d.stories) + ")</td>" +
+          "<td><span class='pill " + cls + "'>" + esc(state) + "</span></td></tr>";
+      }).join("");
+
+      var platBoxes = PLATFORMS.map(function (p) {
+        return "<label>" +
+          "<input type='checkbox' class='mb-plat' data-c='" + ci + "' data-m='" + mi + "' value='" + p + "'" +
+          (plats.indexOf(p) >= 0 ? " checked" : "") + ">" +
+          platformIcon(p) + PLATFORM_LABELS[p] + "</label>";
+      }).join("");
+
+      return "<div class='month' data-mkey='" + esc(m.key) + "'>" +
+        "<div class='mhead'>" +
+        "<label style='display:flex;align-items:center;gap:8px;margin:0;'>" +
+        "<input type='checkbox' class='mb-en' data-c='" + ci + "' data-m='" + mi + "'" +
+        (enabled ? " checked" : "") + ">" +
+        "<span class='mname'>" + esc(m.key || "Ungrouped days") + "</span></label>" +
+        "<span class='mcount'>" + m.days.length + " day(s), " + posts + " post(s), " +
+        stories + " story(ies)</span>" +
+        "<span class='pill " + (enabled ? "ok" : "run") + "'>" + (enabled ? "posting" : "off") + "</span>" +
+        "</div>" +
+        "<div class='row' style='margin-top:8px;'>" +
+        "<div><label>Start date (first day of this month batch)</label>" +
+        "<input type='date' class='mb-start' data-c='" + ci + "' data-m='" + mi + "' value='" + esc(start) + "'></div>" +
+        "</div>" +
+        "<div class='platchecks'>" + platBoxes + "</div>" +
+        "<details><summary>Day-by-day plan</summary>" +
+        "<table><thead><tr><th>Day</th><th>Posts on</th><th>Feed</th><th>Stories</th><th>State</th></tr></thead><tbody>" +
+        rows + "</tbody></table></details>" +
+        "</div>";
     }).join("");
-    var plan = c.days.length
-      ? "<table><thead><tr><th>Day</th><th>Posts on</th><th>Feed</th><th>Stories</th><th>State</th></tr></thead><tbody>" +
-        planRows + "</tbody></table>"
-      : "<p class='note'>No day folders yet.</p>";
+
     return "<div class='flow'><h3>" + esc(c.name) + "</h3>" +
       "<div class='row'>" +
-      "<div><label>Start date (= first day)</label><input type='date' class='cf-start' data-i='" + ci + "' value='" + esc(start) + "'></div>" +
       "<div><label>Posts time (local)</label><input type='time' class='cf-pt' data-i='" + ci + "' value='" + esc(pt) + "'></div>" +
       "<div><label>Stories time (local)</label><input type='time' class='cf-st' data-i='" + ci + "' value='" + esc(st) + "'></div>" +
       "</div>" +
-      "<div class='checks' style='margin-top:10px;'><label><input type='checkbox' class='cf-en' data-i='" + ci + "'" +
-      (cfg.enabled ? " checked" : "") + ">Enabled</label>" +
+      (monthsHtml || "<p class='note'>No day folders yet. Use bulk upload below to add a month of content.</p>") +
+      "<div class='checks' style='margin-top:10px;'>" +
       "<a href='" + ghFolderLink(c.path) + "' target='_blank' rel='noopener'>Open folder on GitHub</a></div>" +
-      "<div class='btnrow'><button data-save='" + ci + "'>Save</button>" +
+      "<div class='btnrow'><button data-save='" + ci + "'>Save campaign</button>" +
       "<button class='ghost' data-newday='" + ci + "'>Create next day</button></div>" +
-      plan + "</div>";
+      "</div>";
   }).join("");
 
   wrap.querySelectorAll("[data-save]").forEach(function (b) {
@@ -971,21 +1073,76 @@ function renderCampaigns() {
 
 function saveCampaign(ci) {
   var c = campaignsData[ci];
-  var start = document.querySelector(".cf-start[data-i='" + ci + "']").value;
-  var enabled = document.querySelector(".cf-en[data-i='" + ci + "']").checked;
-  if (enabled && !start) { status("content-status", "err", "Pick a start date before enabling " + c.name + "."); return; }
+  var months = monthsOf(c);
+  var cfg = configState.campaigns[c.name] || {};
+  var batches = {};
+  var problems = [];
+  var anyOn = false;
+
+  months.forEach(function (m, mi) {
+    var en = document.querySelector(".mb-en[data-c='" + ci + "'][data-m='" + mi + "']").checked;
+    var start = document.querySelector(".mb-start[data-c='" + ci + "'][data-m='" + mi + "']").value;
+    var plats = [];
+    document.querySelectorAll(".mb-plat[data-c='" + ci + "'][data-m='" + mi + "']").forEach(function (b) {
+      if (b.checked) plats.push(b.value);
+    });
+    if (en && !start) problems.push((m.key || "Ungrouped days") + " needs a start date");
+    if (en && !plats.length) problems.push((m.key || "Ungrouped days") + " needs at least one platform");
+    if (en) anyOn = true;
+    batches[m.key] = { enabled: en, start_date: start, platforms: plats };
+  });
+  if (problems.length) {
+    status("content-status", "err", "Fix before saving: " + problems.join("; ") + ".");
+    return;
+  }
+
   configState.campaigns[c.name] = {
-    enabled: enabled, start_date: start,
-    posts_time_utc: localToUtc(start, document.querySelector(".cf-pt[data-i='" + ci + "']").value || "09:00"),
-    stories_time_utc: localToUtc(start, document.querySelector(".cf-st[data-i='" + ci + "']").value || "12:00")
+    enabled: false,  // month checkboxes are the source of truth now
+    start_date: cfg.start_date || "",
+    posts_time_utc: localToUtc("", document.querySelector(".cf-pt[data-i='" + ci + "']").value || "09:00"),
+    stories_time_utc: localToUtc("", document.querySelector(".cf-st[data-i='" + ci + "']").value || "12:00"),
+    platforms: cfg.platforms || PLATFORMS.slice(),
+    batches: batches
   };
   status("content-status", "info", "Saving " + c.name + "...");
   saveConfig("Update campaign: " + c.name).then(function () {
-    status("content-status", "ok", enabled
-      ? c.name + " is ON. Its first day posts on " + start + "."
-      : c.name + " saved (off).");
+    status("content-status", "ok", anyOn
+      ? c.name + " saved. Checked month(s) will post on their start dates."
+      : c.name + " saved (all months off).");
     renderCampaigns();
   }).catch(function (e) { status("content-status", "err", "Save failed: " + e.message); });
+}
+
+// Inline SVG platform icons (self-contained; the dashboard loads nothing external).
+var PLATFORM_ICONS = {
+  instagram: "M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z",
+  facebook: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z",
+  tiktok: "M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"
+};
+var PLATFORMS = ["instagram", "facebook", "tiktok"];
+var PLATFORM_LABELS = { instagram: "Instagram", facebook: "Facebook", tiktok: "TikTok" };
+
+function platformIcon(name) {
+  var d = PLATFORM_ICONS[name];
+  if (!d) return "";
+  return "<svg class='picon' viewBox='0 0 24 24' aria-hidden='true'><path d='" + d + "'></path></svg>";
+}
+
+// Group a campaign's days by their month folder ("Month 1/Day 3" -> "Month 1";
+// days directly under the campaign have no month, keyed "").
+function monthKeyOf(day) {
+  var parts = (day.rel || "").split("/").filter(Boolean);
+  return parts.length > 1 ? parts[0] : "";
+}
+
+function monthsOf(c) {
+  var order = [], byKey = {};
+  c.days.forEach(function (d) {
+    var k = monthKeyOf(d);
+    if (!byKey[k]) { byKey[k] = []; order.push(k); }
+    byKey[k].push(d);
+  });
+  return order.map(function (k) { return { key: k, days: byKey[k] }; });
 }
 
 // Describe how a campaign names its day folders, so new days continue the
@@ -1084,12 +1241,76 @@ function updateBulkDatalist() {
   el("bulk-campaign-list").innerHTML = campaignsData.map(function (c) {
     return "<option value=\"" + esc(c.name) + "\">";
   }).join("");
+  if (el("bulk-campaign").value.trim()) refreshBulkMonth();
 }
 
-el("bulk-campaign").oninput = function () {
+// Day-folder naming inside one month: continue that month's own pattern
+// ("Day 20" -> "Day 21"); a brand-new month starts at Day 1, borrowing the
+// naming style from the campaign's existing months.
+function monthPattern(c, monthKey) {
+  var mdays = c ? c.days.filter(function (d) { return monthKeyOf(d) === monthKey; }) : [];
+  var sample = mdays.length ? mdays : (c ? c.days.filter(function (d) { return monthKeyOf(d); }) : []);
+  var style = { prefix: "Day ", suffix: "", postDir: "Post", storyDir: "Story" };
+  if (sample.length) {
+    var last = sample[sample.length - 1];
+    var leaf = (last.rel || "").split("/").pop() || "";
+    var m = leaf.match(/^(.*?)(\d+)(\D*)$/);
+    if (m) { style.prefix = m[1]; style.suffix = m[3]; }
+    style.postDir = last.postDir || style.postDir;
+    style.storyDir = last.storyDir || style.storyDir;
+  } else if (c && c.days.length && !c.days.some(function (d) { return monthKeyOf(d); })) {
+    // Campaign without months at all: keep its flat day style.
+    var pat = dayPattern(c);
+    return { nextNum: pat.nextNum, make: function (n) { return pat.make(n); },
+             postDir: pat.postDir, storyDir: pat.storyDir };
+  }
+  var nextNum = 1;
+  if (mdays.length) {
+    var leafLast = (mdays[mdays.length - 1].rel || "").split("/").pop() || "";
+    var mm = leafLast.match(/(\d+)(?!.*\d)/);
+    nextNum = mm ? parseInt(mm[1], 10) + 1 : mdays.length + 1;
+  }
+  return {
+    nextNum: nextNum,
+    make: function (n) { return (monthKey ? monthKey + "/" : "") + style.prefix + n + style.suffix; },
+    postDir: style.postDir, storyDir: style.storyDir
+  };
+}
+
+function suggestedNextMonth(c) {
+  if (!c) return "Month 1";
+  var maxN = 0, sawMonth = false;
+  c.days.forEach(function (d) {
+    var k = monthKeyOf(d);
+    if (!k) return;
+    sawMonth = true;
+    var m = k.match(/(\d+)(?!.*\d)/);
+    if (m) maxN = Math.max(maxN, parseInt(m[1], 10));
+  });
+  if (!sawMonth) return "Month 1";
+  return maxN ? "Month " + (maxN + 1) : "Month 1";
+}
+
+function refreshBulkMonth() {
   var name = el("bulk-campaign").value.trim();
   var found = campaignsData.filter(function (c) { return c.name === name; })[0];
-  el("bulk-startday").value = found ? dayPattern(found).nextNum : 1;
+  var monthKeys = [];
+  if (found) {
+    monthsOf(found).forEach(function (m) { if (m.key) monthKeys.push(m.key); });
+  }
+  var next = suggestedNextMonth(found);
+  el("bulk-month-list").innerHTML = monthKeys.concat(monthKeys.indexOf(next) < 0 ? [next] : [])
+    .map(function (k) { return "<option value=\"" + esc(k) + "\">"; }).join("");
+  if (!el("bulk-month").value.trim()) el("bulk-month").value = next;
+  var pat = monthPattern(found, el("bulk-month").value.trim());
+  el("bulk-startday").value = pat.nextNum;
+}
+
+el("bulk-campaign").oninput = refreshBulkMonth;
+el("bulk-month").oninput = function () {
+  var name = el("bulk-campaign").value.trim();
+  var found = campaignsData.filter(function (c) { return c.name === name; })[0];
+  el("bulk-startday").value = monthPattern(found, el("bulk-month").value.trim()).nextNum;
 };
 
 function computeBulkPlan() {
@@ -1114,7 +1335,8 @@ el("bulk-plan").onclick = function () {
   var plan = computeBulkPlan();
   if (!plan.days.length) { el("bulk-plan-out").textContent = "Choose some images first."; return; }
   var name = el("bulk-campaign").value.trim();
-  var pat = dayPattern(campaignsData.filter(function (c) { return c.name === name; })[0]);
+  var found = campaignsData.filter(function (c) { return c.name === name; })[0];
+  var pat = monthPattern(found, el("bulk-month").value.trim());
   var lines = plan.days.map(function (d) {
     return pat.make(d.day) + ": " + d.posts.length + " post(s), " + d.stories.length + " story(ies)";
   });
@@ -1134,10 +1356,11 @@ el("bulk-upload").onclick = async function () {
 
   status("content-status", "info", "Converting images...");
   try {
-    // Continue the campaign's existing day-folder naming so new days sort
-    // after the current ones instead of shifting the schedule.
+    // Sort into the chosen month, continuing that month's own day numbering
+    // so new days never shift the existing schedule.
     var existing = campaignsData.filter(function (c) { return c.name === name; })[0];
-    var pat = dayPattern(existing);
+    var monthKey = el("bulk-month").value.trim();
+    var pat = monthPattern(existing, monthKey);
     var stamp = Date.now();
     var files = [];
     for (var i = 0; i < plan.days.length; i++) {
@@ -1156,20 +1379,28 @@ el("bulk-upload").onclick = async function () {
         });
       }
     }
-    // Register the campaign if it is new (include the updated config in the commit).
-    if (!configState.campaigns[name]) {
-      configState.campaigns[name] = { enabled: false, start_date: "",
-        posts_time_utc: "07:00", stories_time_utc: "10:00" };
-      files.push({
-        path: CAMPAIGNS_PATH,
-        base64: textToBase64(JSON.stringify({ campaigns: configState.campaigns }, null, 2) + "\n")
-      });
+    // Register the campaign and the month batch (off until you check it),
+    // included in the same commit.
+    var cfg = configState.campaigns[name] || { enabled: false, start_date: "",
+      posts_time_utc: "07:00", stories_time_utc: "10:00",
+      platforms: PLATFORMS.slice(), batches: {} };
+    cfg.batches = cfg.batches || {};
+    if (!cfg.batches[monthKey]) {
+      cfg.batches[monthKey] = { enabled: false, start_date: "",
+        platforms: (cfg.platforms || PLATFORMS).slice() };
     }
+    configState.campaigns[name] = cfg;
+    files.push({
+      path: CAMPAIGNS_PATH,
+      base64: textToBase64(JSON.stringify({ campaigns: configState.campaigns }, null, 2) + "\n")
+    });
     status("content-status", "info", "Uploading " + files.length + " file(s) in one commit...");
-    await bulkCommit(files, "Bulk upload " + files.length + " file(s) to " + name);
+    await bulkCommit(files, "Bulk upload " + files.length + " file(s) to " + name +
+      (monthKey ? " / " + monthKey : ""));
     status("content-status", "ok",
       "Uploaded " + plan.totalPosts + " feed + " + plan.totalStories + " story image(s) across " +
-      plan.days.length + " day(s) in " + name + ". Now set its start date and enable it.");
+      plan.days.length + " day(s) in " + name + (monthKey ? " / " + monthKey : "") +
+      ". Now set the month's start date, pick platforms, tick its checkbox, and Save.");
     el("bulk-posts").value = ""; el("bulk-stories").value = "";
     el("bulk-plan-out").textContent = "";
     loadConfig().then(loadCampaigns);

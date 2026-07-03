@@ -227,6 +227,48 @@ def test_tiktok_failure_does_not_block_instagram(
     assert not (tmp_path / "docs/uploads/a.jpg").exists()
 
 
+def test_platforms_list_routes_the_post(tmp_path, ig_env, fb_env, tt_env,
+                                         fake_publish, monkeypatch):
+    fb_calls, tt_calls = [], []
+    monkeypatch.setattr(Facebook, "publish_media",
+                        lambda self, *a, **k: fb_calls.append(a) or "fb_1")
+    monkeypatch.setattr(TikTok, "publish_media",
+                        lambda self, *a, **k: tt_calls.append(a) or "tt_1")
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [
+        item(tmp_path, id="ig_fb", media_path="docs/uploads/a.jpg",
+             platforms=["instagram", "facebook"]),
+        item(tmp_path, id="ig_only", media_path="docs/uploads/b.jpg",
+             platforms=["instagram"]),
+    ])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert len(fake_publish) == 2                 # both went to Instagram
+    assert len(fb_calls) == 1                     # only ig_fb mirrored to FB
+    assert tt_calls == []                         # tiktok never selected
+    by = {it["id"]: it for it in items}
+    assert by["ig_fb"]["fb_post_id"] == "fb_1"
+    assert "fb_post_id" not in by["ig_only"]
+    assert all(it["status"] == "posted" for it in items)
+
+
+def test_facebook_becomes_primary_when_instagram_not_selected(
+        tmp_path, ig_env, fb_env, fake_publish, monkeypatch):
+    monkeypatch.setattr(Facebook, "publish_media",
+                        lambda self, *a, **k: "fb_primary_9")
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path, platforms=["facebook"])])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert fake_publish == []                     # Instagram untouched
+    assert items[0]["status"] == "posted"
+    assert items[0]["post_id"] == "fb_primary_9"
+    assert items[0]["fb_post_id"] == "fb_primary_9"
+    assert not (tmp_path / "docs/uploads/a.jpg").exists()   # media cleaned up
+
+
 def test_no_tiktok_when_unconfigured(tmp_path, ig_env, fake_publish, monkeypatch):
     for k in ("TIKTOK_CLIENT_KEY", "TIKTOK_CLIENT_SECRET",
               "TIKTOK_REFRESH_TOKEN", "TIKTOK_ACCESS_TOKEN"):

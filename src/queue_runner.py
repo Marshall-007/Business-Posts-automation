@@ -138,53 +138,62 @@ def process_due(
         if is_video is None:
             is_video = item.get("media_type") == "REELS"
 
+        # Platform routing: the item carries the platforms its month/batch was
+        # configured for; older items without the field go everywhere.
+        selected = item.get("platforms") or ["instagram", "facebook", "tiktok"]
+
         # is_configured() checks for image_urls; give it the item's URL.
         ig = Instagram(creds, {**business_config, "image_urls": [media_url]})
-        if not ig.is_configured():
-            print("Instagram is not configured (missing secrets). Skipping.", file=sys.stderr)
-            break
+        ready = {
+            "instagram": "instagram" in selected and ig.is_configured(),
+            "facebook": "facebook" in selected and fb_ready,
+            # TikTok has no Stories API.
+            "tiktok": "tiktok" in selected and tt_ready and post_type != "story",
+        }
+        # The primary platform drives status/retries; the rest are best-effort.
+        primary = next((p for p in ("instagram", "facebook", "tiktok") if ready[p]), None)
+        if primary is None:
+            print(f"[skip] {item['id']}: none of {selected} is configured "
+                  "(or can take this post type).", file=sys.stderr)
+            continue
+
+        def publish_to(platform: str) -> str:
+            caption = item.get("caption", "")
+            if platform == "instagram":
+                return ig.publish_media(caption, media_url, post_type, is_video)
+            if platform == "facebook":
+                return facebook.publish_media(caption, media_url, post_type, is_video)
+            local = str(root / media_path) if media_path else None
+            return tiktok.publish_media(caption, media_url, post_type, is_video, local)
+
+        ID_FIELD = {"instagram": "ig_post_id", "facebook": "fb_post_id",
+                    "tiktok": "tiktok_publish_id"}
+        ERR_FIELD = {"instagram": "ig_error", "facebook": "fb_error",
+                     "tiktok": "tiktok_error"}
         try:
-            post_id = ig.publish_media(item.get("caption", ""), media_url, post_type, is_video)
+            post_id = publish_to(primary)
             item["status"] = "posted"
             item["post_id"] = post_id
+            item[ID_FIELD[primary]] = post_id
             item["posted_at"] = now.isoformat(timespec="seconds")
             changed = True
             kind = "story" if post_type == "story" else ("reel" if is_video else "image")
-            print(f"[ok] posted {item['id']} ({kind}, post id {post_id})")
+            print(f"[ok] posted {item['id']} to {primary} ({kind}, post id {post_id})")
 
-            # Cross-post the same media to the Facebook Page (best effort: a
-            # Facebook failure must not block Instagram or re-trigger a retry,
-            # since Instagram already succeeded). Done before the file is
-            # deleted so Facebook can still fetch it from the public URL.
-            if fb_ready:
+            # Mirror to the other selected platforms (best effort: a mirror
+            # failure must not block the primary post or re-trigger a retry).
+            # Done before the file is deleted so they can still fetch the URL.
+            for platform in ("instagram", "facebook", "tiktok"):
+                if platform == primary or not ready[platform]:
+                    continue
                 try:
-                    fb_id = facebook.publish_media(
-                        item.get("caption", ""), media_url, post_type, is_video
-                    )
-                    item["fb_post_id"] = fb_id
-                    item.pop("fb_error", None)
-                    print(f"     cross-posted to Facebook (post id {fb_id})")
-                except (PostError, Exception) as fb_exc:  # noqa: BLE001
-                    item["fb_error"] = str(fb_exc)
-                    print(f"     [warn] Facebook cross-post failed: {fb_exc}",
-                          file=sys.stderr)
-
-            # Cross-post feed items to TikTok (best effort, same rationale as
-            # Facebook). TikTok has no Stories API, so stories are skipped.
-            # Uses the local file for video byte upload, so it runs before the
-            # media is deleted below.
-            if tt_ready and post_type != "story":
-                try:
-                    local = str(root / media_path) if media_path else None
-                    tt_id = tiktok.publish_media(
-                        item.get("caption", ""), media_url, post_type, is_video, local
-                    )
-                    item["tiktok_publish_id"] = tt_id
-                    item.pop("tiktok_error", None)
-                    print(f"     cross-posted to TikTok (publish id {tt_id})")
-                except (PostError, Exception) as tt_exc:  # noqa: BLE001
-                    item["tiktok_error"] = str(tt_exc)
-                    print(f"     [warn] TikTok cross-post failed: {tt_exc}",
+                    mirror_id = publish_to(platform)
+                    item[ID_FIELD[platform]] = mirror_id
+                    item.pop(ERR_FIELD[platform], None)
+                    print(f"     cross-posted to {platform} (post id {mirror_id})")
+                except (PostError, Exception) as exc:  # noqa: BLE001
+                    item[ERR_FIELD[platform]] = str(exc)
+                    print(f"     [warn] {platform} cross-post failed: {exc}",
                           file=sys.stderr)
 
             # Remove the media from the repo now that it is published.
