@@ -339,6 +339,29 @@ def test_no_facebook_cross_post_when_unconfigured(
     assert "fb_post_id" not in items[0] and "fb_error" not in items[0]
 
 
+def test_activity_log_records_successes_and_story_failures(
+        tmp_path, ig_env, fb_env, fake_publish, monkeypatch):
+    # A failing Facebook story mirror must land in data/activity.json with the
+    # full API error, alongside the Instagram success.
+    def fb_boom(self, *a, **k):
+        raise PostError("Facebook API error: (#10) Page does not have permission")
+
+    monkeypatch.setattr(Facebook, "publish_media", fb_boom)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path, id="story1", post_type="story",
+                          media_path="docs/uploads/s.jpg")])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    log = json.loads((tmp_path / "data/activity.json").read_text())["entries"]
+    assert len(log) == 2
+    by_platform = {e["platform"]: e for e in log}
+    assert by_platform["instagram"]["ok"] is True
+    assert by_platform["instagram"]["kind"] == "story"
+    assert by_platform["facebook"]["ok"] is False
+    assert "Page does not have permission" in by_platform["facebook"]["error"]
+
+
 def test_unconfigured_instagram_posts_nothing(tmp_path, monkeypatch, fake_publish):
     monkeypatch.delenv("INSTAGRAM_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("INSTAGRAM_USER_ID", raising=False)

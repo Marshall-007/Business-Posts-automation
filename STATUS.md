@@ -3,7 +3,31 @@
 The single place to see what is finished, what is in progress, and what is
 still to do. Update this file whenever something changes.
 
-Last updated: 2026-07-03
+Last updated: 2026-07-03 (enterprise dashboard rebuild)
+
+## Latest: enterprise dashboard
+
+The dashboard (docs/index.html) is now a single-page app with a left-side
+menu showing one section at a time: **Dashboard** (stats, activity log,
+recent runs), **Companies** (switch between clients, guided setup),
+**Scheduled Posts** (the queue), **Auto Posts** (month campaigns),
+**Admin** (Add Company creates the client's repo automatically on `main`),
+**Setup Instructions** (plain-language walkthroughs of every credential),
+and **Settings** (connection). Highlights:
+
+- One-off post scheduling was removed; Auto Posts campaigns are the way to post.
+- Only Instagram and Facebook show in the UI; TikTok stays wired in the
+  backend with secret placeholders for later.
+- Every publish attempt (feed and stories, success or failure with the full
+  API error) is written to `data/activity.json` and shown on the Dashboard.
+- **Guided setup wizard** per company: modal steps with Next/Back and
+  Save-and-Verify - GitHub token, Facebook Page (with automatic exchange to
+  a permanent Page token), Instagram (auto-upgrade to long-lived), secret
+  storage with copy buttons and existence verification, and GitHub Pages.
+  Progress is saved so you can leave and return.
+- Add Company (Admin) creates the repo from this template, renames the
+  default branch to `main`, personalizes config.yaml, clears starter data,
+  and pre-loads the company card. Gwalava ships pre-loaded.
 
 ## Done and verified live
 

@@ -36,6 +36,25 @@ QUEUE_FILE = Path(__file__).resolve().parent.parent / "data" / "queue.json"
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 MAX_ATTEMPTS = 3
 DAILY_CAP_DEFAULT = 20
+ACTIVITY_LIMIT = 300
+
+
+def log_activity(root: Path, entry: dict) -> None:
+    """Append one publish attempt to data/activity.json (newest first, capped).
+
+    Every success and every failure lands here with the full error text, so
+    the dashboard can show exactly what each platform said -- especially for
+    story posts, which otherwise fail invisibly inside Actions logs.
+    """
+    path = root / "data" / "activity.json"
+    try:
+        entries = json.loads(path.read_text(encoding="utf-8")).get("entries", [])
+    except (json.JSONDecodeError, OSError):
+        entries = []
+    entries.insert(0, entry)
+    del entries[ACTIVITY_LIMIT:]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"entries": entries}, indent=2) + "\n", encoding="utf-8")
 
 
 def daily_cap() -> int:
@@ -170,6 +189,18 @@ def process_due(
                     "tiktok": "tiktok_publish_id"}
         ERR_FIELD = {"instagram": "ig_error", "facebook": "fb_error",
                      "tiktok": "tiktok_error"}
+        kind = "story" if post_type == "story" else ("reel" if is_video else "image")
+
+        def record(platform: str, ok: bool, detail: str) -> None:
+            log_activity(root, {
+                "at": now.isoformat(timespec="seconds"),
+                "item": item.get("id"),
+                "platform": platform,
+                "kind": kind,
+                "ok": ok,
+                ("post_id" if ok else "error"): detail,
+            })
+
         try:
             post_id = publish_to(primary)
             item["status"] = "posted"
@@ -177,7 +208,7 @@ def process_due(
             item[ID_FIELD[primary]] = post_id
             item["posted_at"] = now.isoformat(timespec="seconds")
             changed = True
-            kind = "story" if post_type == "story" else ("reel" if is_video else "image")
+            record(primary, True, post_id)
             print(f"[ok] posted {item['id']} to {primary} ({kind}, post id {post_id})")
 
             # Mirror to the other selected platforms (best effort: a mirror
@@ -190,9 +221,11 @@ def process_due(
                     mirror_id = publish_to(platform)
                     item[ID_FIELD[platform]] = mirror_id
                     item.pop(ERR_FIELD[platform], None)
+                    record(platform, True, mirror_id)
                     print(f"     cross-posted to {platform} (post id {mirror_id})")
                 except (PostError, Exception) as exc:  # noqa: BLE001
                     item[ERR_FIELD[platform]] = str(exc)
+                    record(platform, False, str(exc))
                     print(f"     [warn] {platform} cross-post failed: {exc}",
                           file=sys.stderr)
 
@@ -207,6 +240,7 @@ def process_due(
             if item["attempts"] >= MAX_ATTEMPTS:
                 item["status"] = "error"
             changed = True
+            record(primary, False, str(exc))
             print(f"[fail] {item['id']}: {exc}", file=sys.stderr)
 
     if changed:
