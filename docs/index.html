@@ -6,24 +6,30 @@
 <title>Posts Automation</title>
 <style>
   :root {
-    --bg: #18161e;
-    --panel: #211f29;
-    --panel2: #2a2833;
-    --line: #3a3745;
-    --text: #f5f2ee;
-    --muted: #b3aec2;
-    --accent: #c8894b;
-    --accent-dim: #9c6a39;
-    --ok: #4c9a6b;
-    --err: #c05a4d;
-    --radius: 10px;
-    --navw: 218px;
+    --bg: #f5f6f8;
+    --panel: #ffffff;
+    --panel2: #f3f5f8;
+    --line: #e5e8ee;
+    --line-strong: #d3d8e0;
+    --text: #101827;
+    --muted: #667085;
+    --accent: #4f46e5;
+    --accent-dim: #4338ca;
+    --accent-soft: #eef0fe;
+    --ok: #15a34a;
+    --ok-soft: #e7f6ee;
+    --err: #dc2626;
+    --err-soft: #fdecec;
+    --shadow: 0 1px 2px rgba(16,24,40,.05), 0 1px 3px rgba(16,24,40,.06);
+    --shadow-lg: 0 12px 32px rgba(16,24,40,.14);
+    --radius: 12px;
+    --navw: 224px;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font-family: -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5; -webkit-font-smoothing: antialiased;
   }
   .shell { display: flex; min-height: 100vh; }
 
@@ -33,101 +39,104 @@
     border-right: 1px solid var(--line); padding: 18px 12px;
     display: flex; flex-direction: column; gap: 2px;
   }
-  aside .logo { font-size: 16px; font-weight: 700; padding: 4px 10px 2px; }
-  aside .logosub { color: var(--accent); font-size: 12px; padding: 0 10px 10px; }
+  aside .logo { font-size: 16px; font-weight: 700; padding: 4px 10px 2px;
+    letter-spacing: -.2px; }
+  aside .logosub { color: var(--muted); font-size: 12px; padding: 0 10px 10px; }
   aside .chip {
-    margin: 4px 10px 10px; padding: 8px 10px; border: 1px solid var(--line);
-    border-radius: 8px; background: var(--panel2); font-size: 11px;
+    margin: 4px 10px 10px; padding: 9px 11px; border: 1px solid var(--line);
+    border-radius: 10px; background: var(--panel2); font-size: 11px;
     color: var(--muted); overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap;
   }
   aside .chip b { color: var(--text); display: block; font-size: 13px;
     overflow: hidden; text-overflow: ellipsis; }
   aside .navgroup { color: var(--muted); font-size: 10.5px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 1px; padding: 12px 12px 4px;
-    opacity: .8; }
+    text-transform: uppercase; letter-spacing: 1px; padding: 12px 12px 4px; }
   aside a.nav {
-    display: block; padding: 9px 12px; border-radius: 8px; color: var(--muted);
+    display: block; padding: 9px 12px; border-radius: 9px; color: var(--muted);
     text-decoration: none; font-size: 14px; font-weight: 500;
-    border-left: 3px solid transparent; transition: background .12s, color .12s;
+    transition: background .12s, color .12s;
   }
   aside a.nav:hover { background: var(--panel2); color: var(--text); }
-  aside a.nav.active { background: var(--panel2); color: var(--accent);
-    border-left-color: var(--accent); }
+  aside a.nav.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   aside .navfoot { margin-top: auto; color: var(--muted); font-size: 11px;
     padding: 12px 10px 0; border-top: 1px solid var(--line); }
 
   .content { flex: 1; min-width: 0; }
   header {
-    padding: 16px 24px; border-bottom: 1px solid var(--line);
+    padding: 16px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
     display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    position: sticky; top: 0; z-index: 10;
   }
-  header h1 { font-size: 18px; margin: 0; }
-  header .sub { color: var(--accent); font-size: 13px; }
+  header h1 { font-size: 19px; margin: 0; letter-spacing: -.3px; }
+  header .sub { color: var(--muted); font-size: 13px; }
   header .menu-btn { display: none; margin-left: auto; }
-  main { max-width: 1020px; margin: 0 auto; padding: 22px 20px 60px; }
+  main { max-width: 1020px; margin: 0 auto; padding: 24px 20px 64px; }
 
   .view { display: none; }
-  .view.active { display: block; }
+  .view.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
   section {
     background: var(--panel); border: 1px solid var(--line);
-    border-radius: var(--radius); padding: 20px; margin-bottom: 22px;
+    border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+    box-shadow: var(--shadow);
   }
-  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .8px;
-       color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .6px;
+       color: var(--muted); margin: 0 0 12px; font-weight: 700; }
   h3 { font-size: 15px; }
-  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 12px 0 4px; font-weight: 500; }
   input[type=text], input[type=password], input[type=date], input[type=time],
   input[type=number], textarea, select {
-    width: 100%; background: var(--panel2); border: 1px solid var(--line);
-    color: var(--text); padding: 9px 11px; border-radius: 8px; font-size: 14px;
-    font-family: inherit;
+    width: 100%; background: var(--panel); border: 1px solid var(--line-strong);
+    color: var(--text); padding: 9px 11px; border-radius: 9px; font-size: 14px;
+    font-family: inherit; transition: border-color .12s, box-shadow .12s;
   }
   textarea { min-height: 70px; resize: vertical; }
   .row { display: flex; gap: 14px; flex-wrap: wrap; }
   .row > div { flex: 1; min-width: 180px; }
   button {
-    background: var(--accent); color: #1a1620; border: none; cursor: pointer;
-    padding: 9px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
-    font-family: inherit;
+    background: var(--accent); color: #ffffff; border: none; cursor: pointer;
+    padding: 9px 16px; border-radius: 9px; font-size: 14px; font-weight: 600;
+    font-family: inherit; box-shadow: var(--shadow);
+    transition: background .12s, color .12s, transform .05s, box-shadow .12s;
   }
-  button:hover { background: var(--accent-dim); color: var(--text); }
-  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--text); }
-  button.ghost:hover { background: var(--panel2); }
-  button.danger { background: transparent; border: 1px solid var(--err); color: var(--err); }
-  button.danger:hover { background: var(--err); color: var(--text); }
-  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:hover { background: var(--accent-dim); }
+  button.ghost { background: var(--panel); border: 1px solid var(--line-strong); color: var(--text); box-shadow: none; }
+  button.ghost:hover { background: var(--panel2); border-color: var(--muted); }
+  button.danger { background: var(--panel); border: 1px solid var(--err); color: var(--err); box-shadow: none; }
+  button.danger:hover { background: var(--err); color: #fff; }
+  button:disabled { opacity: .55; cursor: not-allowed; }
   .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   .flow {
-    border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
-    margin-bottom: 12px; background: var(--panel2);
+    border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+    margin-bottom: 12px; background: var(--panel);
   }
   .flow h3 { margin: 0 0 4px; }
   .flow .meta { color: var(--muted); font-size: 13px; margin-bottom: 10px; word-break: break-word; }
   .checks { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; }
   .checks label { display: flex; align-items: center; gap: 6px; margin: 0; color: var(--text); font-size: 14px; }
   .checks input { width: auto; }
-  .status { margin-top: 14px; padding: 10px 12px; border-radius: 8px; font-size: 14px;
+  .status { margin-top: 14px; padding: 10px 12px; border-radius: 9px; font-size: 14px;
             white-space: pre-wrap; display: none; }
   .status.show { display: block; }
-  .status.ok { background: rgba(76,154,107,.15); border: 1px solid var(--ok); }
-  .status.err { background: rgba(192,90,77,.15); border: 1px solid var(--err); }
+  .status.ok { background: var(--ok-soft); border: 1px solid var(--ok); color: #0d7a37; }
+  .status.err { background: var(--err-soft); border: 1px solid var(--err); color: #b91c1c; }
   .status.info { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
   a { color: var(--accent); }
-  .pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 12px; }
-  .pill.ok { background: rgba(76,154,107,.2); color: #86d3a3; }
-  .pill.err { background: rgba(192,90,77,.2); color: #e0938a; }
-  .pill.run { background: rgba(200,137,75,.2); color: var(--accent); }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .pill.ok { background: var(--ok-soft); color: #0d7a37; }
+  .pill.err { background: var(--err-soft); color: #b91c1c; }
+  .pill.run { background: var(--accent-soft); color: var(--accent); }
   .note { color: var(--muted); font-size: 13px; margin-top: 6px; }
-  .lead { color: var(--muted); font-size: 13px; margin: 0 0 8px; }
+  .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 8px; }
   .hidden { display: none; }
   .picon { width: 15px; height: 15px; vertical-align: -2px; fill: currentColor; margin-right: 5px; }
-  .month { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
-           margin-top: 12px; background: var(--panel); }
+  .month { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+           margin-top: 12px; background: var(--panel2); }
   .month .mhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .month .mhead .mname { font-weight: 600; font-size: 15px; }
   .month .mhead .mcount { color: var(--muted); font-size: 13px; }
@@ -137,96 +146,120 @@
   .platchecks label { display: flex; align-items: center; gap: 6px; margin: 0;
                       color: var(--text); font-size: 14px; }
   .platchecks input { width: auto; }
-  .hint { margin: 8px 0 14px; border: 1px dashed var(--line); border-radius: 8px;
-          padding: 8px 12px; background: rgba(200,137,75,.05); }
-  .hint summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; }
-  .hint p, .hint ul, .hint ol { color: var(--muted); font-size: 13px; margin: 8px 0 2px; }
+  .hint { margin: 8px 0 14px; border: 1px solid var(--line); border-radius: 10px;
+          padding: 4px 14px; background: var(--accent-soft); }
+  .hint summary { cursor: pointer; color: var(--accent); font-size: 13px; font-weight: 600; padding: 8px 0; }
+  .hint p, .hint ul, .hint ol { color: #4b5468; font-size: 13px; margin: 8px 0; }
   .hint ul, .hint ol { padding-left: 18px; }
   .hint li { margin: 3px 0; }
 
   /* Stat cards */
   .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
-  .stat { flex: 1; min-width: 140px; background: var(--panel2);
-          border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
-  .stat .num { font-size: 24px; font-weight: 700; }
-  .stat .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .stat { flex: 1; min-width: 140px; background: var(--panel); position: relative;
+          border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
+  .stat .num { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+  .stat .lbl { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
 
   /* Company cards */
-  .company { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
-             margin-bottom: 12px; background: var(--panel2); }
+  .company { border: 1px solid var(--line); border-radius: 10px; padding: 15px 16px;
+             margin-bottom: 12px; background: var(--panel); box-shadow: var(--shadow); }
   .company h3 { margin: 0 0 4px; }
   .company .meta { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
   .company .links { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; }
 
   /* Setup instructions */
-  .doc details { border: 1px solid var(--line); border-radius: 8px;
-                 margin-bottom: 10px; background: var(--panel2); }
-  .doc summary { cursor: pointer; padding: 12px 14px; font-weight: 600; font-size: 14px; }
-  .doc .body { padding: 0 16px 14px; color: var(--muted); font-size: 14px; }
+  .doc details { border: 1px solid var(--line); border-radius: 10px;
+                 margin-bottom: 10px; background: var(--panel); }
+  .doc summary { cursor: pointer; padding: 13px 15px; font-weight: 600; font-size: 14px; }
+  .doc summary:hover { color: var(--accent); }
+  .doc .body { padding: 0 16px 14px; color: #4b5468; font-size: 14px; }
   .doc .body ol, .doc .body ul { padding-left: 20px; }
   .doc .body li { margin: 6px 0; }
-  .doc .body code { background: var(--bg); border: 1px solid var(--line);
+  .doc .body code { background: var(--panel2); border: 1px solid var(--line-strong);
                     padding: 1px 6px; border-radius: 5px; font-size: 13px; color: var(--text); }
   .doc .body b { color: var(--text); }
 
   /* Wizard modal */
-  .overlay { position: fixed; inset: 0; background: rgba(10,8,14,.72);
-             display: none; align-items: flex-start; justify-content: center;
-             padding: 4vh 14px; z-index: 50; overflow-y: auto; }
+  .overlay { position: fixed; inset: 0; background: rgba(16,24,40,.45);
+             backdrop-filter: blur(2px); display: none; align-items: flex-start;
+             justify-content: center; padding: 4vh 14px; z-index: 50; overflow-y: auto; }
   .overlay.show { display: flex; }
   .modal { background: var(--panel); border: 1px solid var(--line);
-           border-radius: 12px; width: 640px; max-width: 100%;
-           padding: 20px 22px; margin-bottom: 6vh; }
-  .modal h3 { margin: 0 0 2px; font-size: 17px; }
+           border-radius: 14px; width: 640px; max-width: 100%;
+           padding: 22px 24px; margin-bottom: 6vh; box-shadow: var(--shadow-lg); }
+  .modal h3 { margin: 0 0 2px; font-size: 18px; letter-spacing: -.2px; }
   .modal .stepno { color: var(--accent); font-size: 12px; text-transform: uppercase;
                    letter-spacing: .8px; font-weight: 700; }
-  .modal .mbody { color: var(--muted); font-size: 14px; }
+  .modal .mbody { color: #4b5468; font-size: 14px; }
   .modal .mbody ol { padding-left: 20px; }
   .modal .mbody li { margin: 6px 0; }
   .modal .mbody code, .varname {
-    background: var(--bg); border: 1px solid var(--line); padding: 1px 6px;
+    background: var(--panel2); border: 1px solid var(--line-strong); padding: 1px 6px;
     border-radius: 5px; font-size: 13px; color: var(--text);
     font-family: ui-monospace, monospace; }
   .modal .mbody b { color: var(--text); }
   .modal .mfoot { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
   .modal .mfoot .spacer { flex: 1; }
-  .copybtn { background: transparent; border: 1px solid var(--line); color: var(--accent);
-             padding: 4px 10px; font-size: 12px; border-radius: 6px; }
+  .copybtn { background: var(--panel); border: 1px solid var(--line-strong); color: var(--accent);
+             padding: 5px 11px; font-size: 12px; border-radius: 7px; box-shadow: none; }
+  .copybtn:hover { background: var(--accent-soft); }
   .secretrow { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
   .secretrow .varname { flex: 0 0 auto; }
   .wprogress { display: flex; gap: 5px; margin: 12px 0 16px; }
-  .wprogress span { flex: 1; height: 5px; border-radius: 3px; background: var(--line); }
+  .wprogress span { flex: 1; height: 6px; border-radius: 3px; background: var(--line-strong); transition: background .2s; }
   .wprogress span.done { background: var(--ok); }
   .wprogress span.cur { background: var(--accent); }
 
-  /* ---- Polish ---- */
-  input[type=text]:focus, input[type=password]:focus, input[type=date]:focus,
-  input[type=time]:focus, input[type=number]:focus, textarea:focus, select:focus {
-    outline: none; border-color: var(--accent-dim);
-    box-shadow: 0 0 0 2px rgba(200,137,75,.18);
+  /* ---- Hover tooltips ---- */
+  [data-tip] { position: relative; }
+  [data-tip]:hover::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 9px); left: 50%;
+    transform: translateX(-50%); background: #101827; color: #fff; padding: 7px 10px;
+    border-radius: 8px; font-size: 12px; font-weight: 500; line-height: 1.35;
+    width: max-content; max-width: 240px; white-space: normal; text-align: center;
+    z-index: 70; box-shadow: var(--shadow-lg); pointer-events: none;
   }
-  button { transition: background .12s, color .12s, transform .05s; }
+  [data-tip]:hover::before {
+    content: ""; position: absolute; bottom: calc(100% + 4px); left: 50%;
+    transform: translateX(-50%); border: 5px solid transparent;
+    border-top-color: #101827; z-index: 70; pointer-events: none;
+  }
+  aside a.nav[data-tip]:hover::after { left: 8px; transform: none; bottom: auto; top: 50%;
+    margin-top: -14px; left: calc(100% + 6px); }
+  aside a.nav[data-tip]:hover::before { display: none; }
+  .help {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--muted);
+    color: var(--muted); font-size: 10px; font-weight: 700; cursor: help;
+    vertical-align: 1px; margin-left: 5px;
+  }
+  .help:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---- Polish ---- */
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,70,229,.14);
+  }
   button:active { transform: translateY(1px); }
-  section { box-shadow: 0 1px 0 rgba(0,0,0,.18); }
-  tbody tr:hover td { background: rgba(255,255,255,.02); }
+  tbody tr:hover td { background: var(--panel2); }
   .month.on { border-left: 3px solid var(--ok); }
-  .month.off { opacity: .92; }
+  .month.off { opacity: .96; }
   .empty {
     text-align: center; color: var(--muted); font-size: 14px;
-    border: 1px dashed var(--line); border-radius: 8px; padding: 26px 16px;
-    margin: 8px 0;
+    border: 1px dashed var(--line-strong); border-radius: 10px; padding: 28px 16px;
+    margin: 8px 0; background: var(--panel2);
   }
   .empty .big { font-size: 15px; color: var(--text); font-weight: 600;
     margin-bottom: 4px; }
   .empty button { margin-top: 12px; }
-  .pausebar { display: none; background: rgba(192,90,77,.16);
-    border-bottom: 1px solid var(--err); color: #e0938a; font-size: 13px;
-    padding: 8px 24px; text-align: center; }
+  .pausebar { display: none; background: var(--err-soft);
+    border-bottom: 1px solid var(--err); color: #b91c1c; font-size: 13px;
+    padding: 9px 24px; text-align: center; font-weight: 500; }
   .pausebar.show { display: block; }
-  .pausebar b { color: var(--text); }
+  .pausebar b { color: var(--err); }
   .runpill { display: inline-flex; align-items: center; gap: 5px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-  .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .dot.on { background: var(--ok); }
   .dot.off { background: var(--err); }
   .loadnote { color: var(--muted); font-size: 13px; padding: 10px 2px; }
   .loadnote::after { content: "..."; animation: dots 1.2s steps(4, end) infinite; }
@@ -235,6 +268,8 @@
 
   /* ---- Mobile ---- */
   @media (max-width: 820px) {
+    header { position: static; }
+    [data-tip]:hover::after, [data-tip]:hover::before { display: none; }
     .shell { display: block; }
     aside { width: 100%; flex: none; flex-direction: row; flex-wrap: wrap;
             border-right: none; border-bottom: 1px solid var(--line);
@@ -265,16 +300,16 @@
   <div class="logosub">Multi-company workspace</div>
   <div class="chip">Active company<b id="chip-company">-</b></div>
   <div class="navgroup">Workspace</div>
-  <a class="nav" href="#dashboard" data-view="dashboard">Dashboard</a>
-  <a class="nav" href="#scheduled" data-view="scheduled">Scheduled Posts</a>
-  <a class="nav" href="#auto" data-view="auto">Auto Posts</a>
+  <a class="nav" href="#dashboard" data-view="dashboard" data-tip="Overview, activity log and the pause switch">Dashboard</a>
+  <a class="nav" href="#scheduled" data-view="scheduled" data-tip="Everything waiting to publish; cancel or push out now">Scheduled Posts</a>
+  <a class="nav" href="#auto" data-view="auto" data-tip="Load a month of photos and switch it on">Auto Posts</a>
   <div class="navgroup">Manage</div>
-  <a class="nav" href="#companies" data-view="companies">Companies</a>
-  <a class="nav" href="#admin" data-view="admin">Admin</a>
+  <a class="nav" href="#companies" data-view="companies" data-tip="Switch between businesses and run guided setup">Companies</a>
+  <a class="nav" href="#admin" data-view="admin" data-tip="Add a new company; its repo is created for you">Admin</a>
   <div class="navgroup">Help</div>
-  <a class="nav" href="#manual" data-view="manual">User Manual</a>
-  <a class="nav" href="#setup" data-view="setup">Setup Instructions</a>
-  <a class="nav" href="#settings" data-view="settings">Settings</a>
+  <a class="nav" href="#manual" data-view="manual" data-tip="Plain-language guide to running the system">User Manual</a>
+  <a class="nav" href="#setup" data-view="setup" data-tip="How to get every account and credential">Setup Instructions</a>
+  <a class="nav" href="#settings" data-view="settings" data-tip="The GitHub connection for the active company">Settings</a>
   <div class="navfoot">All actions talk directly to GitHub with your token. Nothing else stores your data.</div>
 </aside>
 
@@ -291,15 +326,15 @@
     <section>
       <h2>Overview</h2>
       <div class="stats">
-        <div class="stat"><div class="num" id="st-status">-</div><div class="lbl">Automation</div></div>
-        <div class="stat"><div class="num" id="st-pending">-</div><div class="lbl">Waiting to post</div></div>
-        <div class="stat"><div class="num" id="st-posted">-</div><div class="lbl">Posted</div></div>
-        <div class="stat"><div class="num" id="st-campaigns">-</div><div class="lbl">Campaigns</div></div>
+        <div class="stat" data-tip="Running means the scheduler posts every 15 min. Paused means nothing goes out."><div class="num" id="st-status">-</div><div class="lbl">Automation</div></div>
+        <div class="stat" data-tip="Posts queued and waiting for their scheduled time"><div class="num" id="st-pending">-</div><div class="lbl">Waiting to post</div></div>
+        <div class="stat" data-tip="Posts already published from the queue"><div class="num" id="st-posted">-</div><div class="lbl">Posted</div></div>
+        <div class="stat" data-tip="Content campaigns set up for this company"><div class="num" id="st-campaigns">-</div><div class="lbl">Campaigns</div></div>
       </div>
       <div class="btnrow">
-        <button id="toggle-pause">Pause automation</button>
-        <button id="run-standard" class="ghost">Post now (standard post)</button>
-        <button id="refresh-overview" class="ghost">Refresh</button>
+        <button id="toggle-pause" data-tip="Stop or resume all posting for this company. Nothing is lost.">Pause automation</button>
+        <button id="run-standard" class="ghost" data-tip="Publish one caption-only post to every connected platform now">Post now (standard post)</button>
+        <button id="refresh-overview" class="ghost" data-tip="Reload the numbers, activity log and runs">Refresh</button>
       </div>
       <p class="note" id="pause-note"></p>
       <div id="run-status" class="status"></div>
@@ -334,7 +369,7 @@
       </details>
       <div id="company-list"></div>
       <div class="btnrow">
-        <button id="add-existing" class="ghost">Add an existing repo</button>
+        <button id="add-existing" class="ghost" data-tip="Point the dashboard at a company repo you already have">Add an existing repo</button>
       </div>
       <div id="companies-status" class="status"></div>
     </section>
@@ -354,8 +389,8 @@
       </details>
       <div id="queue-list"></div>
       <div class="btnrow">
-        <button id="reload-queue" class="ghost">Reload queue</button>
-        <button id="run-queue" class="ghost">Process due posts now</button>
+        <button id="reload-queue" class="ghost" data-tip="Fetch the latest queue from GitHub">Reload queue</button>
+        <button id="run-queue" class="ghost" data-tip="Publish anything already overdue instead of waiting for the next run">Process due posts now</button>
       </div>
       <div id="queue-status" class="status"></div>
     </section>
@@ -378,8 +413,8 @@
       </details>
       <div id="campaign-list"></div>
       <div class="btnrow">
-        <button id="reload-content" class="ghost">Reload campaigns</button>
-        <button id="run-content" class="ghost">Sync and post now</button>
+        <button id="reload-content" class="ghost" data-tip="Re-scan the content folders and month settings">Reload campaigns</button>
+        <button id="run-content" class="ghost" data-tip="Convert new photos, queue them, and post anything due right now">Sync and post now</button>
       </div>
 
       <div style="margin-top:18px; border-top:1px solid var(--line); padding-top:16px;">
@@ -413,8 +448,8 @@
         <label for="bulk-stories">Story images (choose many)</label>
         <input id="bulk-stories" type="file" accept="image/*" multiple>
         <div class="btnrow">
-          <button id="bulk-plan" class="ghost">Preview plan</button>
-          <button id="bulk-upload">Sort and upload</button>
+          <button id="bulk-plan" class="ghost" data-tip="See how the photos split into days before uploading">Preview plan</button>
+          <button id="bulk-upload" data-tip="Size the photos, sort them into the month, and commit in one go">Sort and upload</button>
         </div>
         <div id="bulk-plan-out" class="note"></div>
       </div>
@@ -424,7 +459,7 @@
         <div class="row">
           <div><input id="new-campaign-name" type="text" placeholder="e.g. Spring Collection"></div>
           <div style="flex:0 0 auto;"><label>&nbsp;</label>
-            <button id="create-campaign">Create campaign</button></div>
+            <button id="create-campaign" data-tip="Make an empty campaign folder to bulk-upload into">Create campaign</button></div>
         </div>
       </div>
       <div id="content-status" class="status"></div>
@@ -466,7 +501,7 @@
           <input id="nc-token" type="password" placeholder="github_pat_... or ghp_..."></div>
       </div>
       <div class="btnrow">
-        <button id="nc-create">Add Company</button>
+        <button id="nc-create" data-tip="Create the company's repository and jump into guided setup">Add Company</button>
       </div>
       <div id="nc-status" class="status"></div>
     </section>
@@ -773,8 +808,8 @@
       <input id="token" type="password" autocomplete="off" placeholder="github_pat_...">
       <p class="note">Stored only in this browser (localStorage). It is never sent anywhere except GitHub's API.</p>
       <div class="btnrow">
-        <button id="save-setup">Save</button>
-        <button id="test-setup" class="ghost">Test connection</button>
+        <button id="save-setup" data-tip="Store this connection in your browser">Save</button>
+        <button id="test-setup" class="ghost" data-tip="Check the token can reach this repository">Test connection</button>
       </div>
       <div id="setup-status" class="status"></div>
     </section>
@@ -1410,8 +1445,8 @@ function renderCampaigns() {
       (monthsHtml || "<p class='note'>No day folders yet. Use bulk upload below to add a month of content.</p>") +
       "<div class='checks' style='margin-top:10px;'>" +
       "<a href='" + ghFolderLink(c.path) + "' target='_blank' rel='noopener'>Open folder on GitHub</a></div>" +
-      "<div class='btnrow'><button data-save='" + ci + "'>Save campaign</button>" +
-      "<button class='ghost' data-newday='" + ci + "'>Create next day</button></div>" +
+      "<div class='btnrow'><button data-save='" + ci + "' data-tip='Save the month checkboxes, dates and platforms'>Save campaign</button>" +
+      "<button class='ghost' data-newday='" + ci + "' data-tip='Add an empty next-day folder in this campaign'>Create next day</button></div>" +
       "</div>";
   }).join("");
 
@@ -1805,9 +1840,9 @@ function renderCompanies() {
       "<a href='" + pagesUrl + "' target='_blank' rel='noopener'>Hosted dashboard</a>" +
       "</div>" +
       "<div class='btnrow'>" +
-      "<button data-open='" + i + "'>Switch to</button>" +
-      "<button class='ghost' data-wizard='" + i + "'>Guided setup</button>" +
-      "<button class='danger' data-del='" + i + "'>Remove</button>" +
+      "<button data-open='" + i + "' data-tip='Make this the active company across the dashboard'>Switch to</button>" +
+      "<button class='ghost' data-wizard='" + i + "' data-tip='Connect GitHub, Facebook, Instagram and Pages step by step'>Guided setup</button>" +
+      "<button class='danger' data-del='" + i + "' data-tip='Remove from this list only; the repository is not touched'>Remove</button>" +
       "</div></div>";
   }).join("");
 
