@@ -192,8 +192,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-04T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18206097292355566",
+      "ig_post_id": "18206097292355566",
+      "posted_at": "2026-07-04T14:48:49+00:00",
+      "fb_error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Saturday, 04-Jul-26 07:49:01 PDT."
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-1_story_csm-01-stage-moderne-kuechen-2026-3efa12afdb",
