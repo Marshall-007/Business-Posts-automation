@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "at": "2026-07-04T08:04:40+00:00",
+      "item": "content_william-collins-ghost-1_month-1-day-1_feed_csm-00-kollektion-stage-73b577d26e",
+      "platform": "facebook",
+      "kind": "image",
+      "ok": false,
+      "error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Saturday, 04-Jul-26 01:04:52 PDT."
+    },
+    {
+      "at": "2026-07-04T08:04:40+00:00",
+      "item": "content_william-collins-ghost-1_month-1-day-1_feed_csm-00-kollektion-stage-73b577d26e",
+      "platform": "instagram",
+      "kind": "image",
+      "ok": true,
+      "post_id": "18155928016476782"
+    },
+    {
       "at": "2026-07-03T19:48:16+00:00",
       "item": "post_1783025415985_677072",
       "platform": "facebook",
