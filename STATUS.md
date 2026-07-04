@@ -3,7 +3,7 @@
 The single place to see what is finished, what is in progress, and what is
 still to do. Update this file whenever something changes.
 
-Last updated: 2026-07-03 (full audit)
+Last updated: 2026-07-03 (pause switch + forever-renewing tokens)
 
 ## Latest: enterprise dashboard
 
@@ -27,7 +27,13 @@ and **Settings** (connection). Highlights:
   Progress is saved so you can leave and return.
 - Add Company (Admin) creates the repo from this template, renames the
   default branch to `main`, personalizes config.yaml, clears starter data,
-  and pre-loads the company card. Gwalava ships pre-loaded.
+  pre-loads the company card, and jumps straight into Guided setup.
+- **Pause automation** button (Dashboard, per company): writes
+  data/automation.json {paused}; the queue runner and content sync both
+  honor it, so a company stops instantly and resumes with nothing lost.
+- **Forever-renewing tokens:** Instagram (weekly refresh) and Facebook
+  (weekly re-derive of a permanent Page token from the long-lived user
+  token) both self-renew - set up once, never re-login.
 
 ## Done and verified live
 
@@ -59,12 +65,12 @@ and **Settings** (connection). Highlights:
 
 ## To do (user actions, not code)
 
-- [ ] URGENT - the stored Facebook Page token EXPIRED on 2 July (it was a
-  short-lived token). Instagram still posts; every Facebook mirror now fails
-  (see the Dashboard activity log). Fix in 2 minutes: Companies -> Gwalava ->
-  Guided setup -> Facebook step - paste a fresh Graph Explorer token and it
-  exchanges it for a PERMANENT one; then update the
-  FACEBOOK_PAGE_ACCESS_TOKEN secret with the value it gives you.
+- [ ] Facebook token: the old stored token was short-lived and expired 2 July,
+  so Facebook mirrors fail until refreshed (Instagram is unaffected). Fix once:
+  Companies -> Gwalava -> Guided setup -> Facebook step, store all FIVE secrets
+  it gives you (page id, permanent page token, app id, app secret, user token).
+  The new weekly job then re-derives a permanent Page token forever - this can
+  never recur once the five secrets are in place.
 - [ ] In the TikTok developer portal, delete the unused "Gwalava Poster" app (TikTok support was removed).
 
 ## To do (future improvements)
@@ -98,6 +104,7 @@ and **Settings** (connection). Highlights:
 | src/content_prepare.py | Converts/resizes images for Instagram |
 | src/platforms/ | Instagram and Facebook (and text-only others) |
 | .github/workflows/scheduler.yml | Runs the pipeline every 15 minutes |
-| .github/workflows/refresh-token.yml | Keeps the Instagram token fresh |
+| .github/workflows/refresh-token.yml | Weekly: renews the Instagram + Facebook tokens forever |
 | data/campaigns.json | Month batches: enabled/date/platforms per month |
 | data/queue.json | The posting queue (visible in the dashboard) |
+| data/automation.json | Pause switch: {paused} - honored by the engine |

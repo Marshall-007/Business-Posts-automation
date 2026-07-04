@@ -143,6 +143,20 @@ def test_month_batches_post_independently(tmp_path, ig_env, business_config):
     assert more[0]["platforms"] == ["instagram", "facebook"]  # default
 
 
+def test_paused_automation_queues_nothing(tmp_path, ig_env, business_config):
+    qp = write_campaigns(tmp_path, {"WC": {
+        **CFG, "batches": {"Month 1": {"enabled": True, "start_date": "2026-07-10"}},
+    }})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+    (tmp_path / "data/automation.json").write_text('{"paused": true}')
+
+    assert run(tmp_path, qp, business_config) == []
+
+    # Resuming queues it normally.
+    (tmp_path / "data/automation.json").write_text('{"paused": false}')
+    assert len(run(tmp_path, qp, business_config)) == 1
+
+
 def test_batches_ignore_campaign_level_enabled_switch(tmp_path, ig_env, business_config):
     # With batches configured, only month checkboxes matter; a month with no
     # batch entry does not post even if the campaign-level flag is on.

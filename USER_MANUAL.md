@@ -46,15 +46,30 @@ working on.
 "Stories time". A day with 2 files posts them 6 hours apart; 3 files, 4 hours
 apart.
 
-## Pause, resume, or fix a mistake
+## Pause everything (and resume)
 
-- **Pause a month:** untick its checkbox and Save. Cancel any already-queued
-  posts under Scheduled Posts.
+The **Dashboard** has a big **Pause automation** button. Press it and the whole
+company stops instantly - no posts go out, no new content is queued, and a red
+banner shows across the top. Nothing is lost. Press **Resume automation** to
+switch it back on; due posts go out on the next run. Pausing is per company (it
+affects the one in the "Active company" chip), so pausing one client never
+touches another.
+
+## Fix a mistake without pausing everything
+
+- **Pause just one month:** untick its checkbox in Auto Posts and Save. Cancel
+  any already-queued posts under Scheduled Posts.
 - **Cancel one post:** Scheduled Posts -> Cancel on the row (removes the photo too).
 - **Wrong start date before anything posted:** change the date and Save.
   Queued posts keep their old time - cancel them and they re-queue.
-- **Post something right now:** Scheduled Posts -> "Process due posts now",
-  or Dashboard -> "Post now" for a one-off standard post.
+- **Post something right now:** Scheduled Posts -> "Process due posts now".
+
+## Do tokens ever expire? No.
+
+Instagram and Facebook both use tokens that **renew themselves**. A weekly job
+refreshes the Instagram token and re-derives a permanent Facebook Page token,
+saving the fresh values automatically. Once a company is set up you never log in
+again or re-paste a token - it runs until you pause it.
 
 ## Reading the activity log
 

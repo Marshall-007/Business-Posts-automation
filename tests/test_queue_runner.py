@@ -295,6 +295,27 @@ def test_activity_log_records_successes_and_story_failures(
     assert "Page does not have permission" in by_platform["facebook"]["error"]
 
 
+def test_paused_automation_posts_nothing(tmp_path, ig_env, fake_publish):
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+    (tmp_path / "data/automation.json").write_text('{"paused": true}')
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert fake_publish == []                      # nothing posted
+    assert items[0]["status"] == "pending"         # left untouched
+    assert (tmp_path / "docs/uploads/a.jpg").exists()
+
+    # Resuming lets it post again.
+    (tmp_path / "data/automation.json").write_text('{"paused": false}')
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+    assert len(fake_publish) == 1
+
+
+def test_is_paused_defaults_to_false_when_no_file(tmp_path):
+    assert qr.is_paused(tmp_path) is False
+
+
 def test_unconfigured_instagram_posts_nothing(tmp_path, monkeypatch, fake_publish):
     monkeypatch.delenv("INSTAGRAM_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("INSTAGRAM_USER_ID", raising=False)

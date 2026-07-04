@@ -44,7 +44,7 @@ from urllib.parse import quote
 
 from .captions import CaptionPool, with_tags
 from .content_prepare import folder_kind
-from .queue_runner import QUEUE_FILE, load_queue, save_queue
+from .queue_runner import QUEUE_FILE, is_paused, load_queue, save_queue
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONTENT_DIR_NAME = "content"
@@ -293,6 +293,10 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
     content_dir = root / CONTENT_DIR_NAME
     if not content_dir.is_dir():
         print("No content/ directory found.")
+        return []
+
+    if is_paused(root):
+        print("Automation is paused; not queuing new content until resumed.")
         return []
 
     configs = load_campaign_configs(root)

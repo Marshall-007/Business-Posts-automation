@@ -38,6 +38,20 @@ DAILY_CAP_DEFAULT = 20
 ACTIVITY_LIMIT = 300
 
 
+def is_paused(root: Path | None = None) -> bool:
+    """True when the whole automation is paused from the dashboard.
+
+    The Pause button writes data/automation.json {"paused": true}; while set,
+    nothing is queued and nothing is posted, so a company can be stopped and
+    later resumed without losing any content or schedule.
+    """
+    path = (root or PROJECT_ROOT) / "data" / "automation.json"
+    try:
+        return bool(json.loads(path.read_text(encoding="utf-8")).get("paused"))
+    except (json.JSONDecodeError, OSError):
+        return False
+
+
 def log_activity(root: Path, entry: dict) -> None:
     """Append one publish attempt to data/activity.json (newest first, capped).
 
@@ -113,6 +127,10 @@ def process_due(
 
     data = load_queue(queue_path)
     items = data.get("items", [])
+
+    if is_paused(root):
+        print("Automation is paused; no posts will go out until it is resumed.")
+        return items
 
     due = sorted(
         (

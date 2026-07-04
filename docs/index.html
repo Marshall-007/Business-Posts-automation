@@ -219,6 +219,15 @@
   .empty .big { font-size: 15px; color: var(--text); font-weight: 600;
     margin-bottom: 4px; }
   .empty button { margin-top: 12px; }
+  .pausebar { display: none; background: rgba(192,90,77,.16);
+    border-bottom: 1px solid var(--err); color: #e0938a; font-size: 13px;
+    padding: 8px 24px; text-align: center; }
+  .pausebar.show { display: block; }
+  .pausebar b { color: var(--text); }
+  .runpill { display: inline-flex; align-items: center; gap: 5px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+  .dot.off { background: var(--err); }
   .loadnote { color: var(--muted); font-size: 13px; padding: 10px 2px; }
   .loadnote::after { content: "..."; animation: dots 1.2s steps(4, end) infinite; }
   @keyframes dots { 0% { content: ""; } 25% { content: "."; }
@@ -274,6 +283,7 @@
   <h1 id="page-title">Dashboard</h1>
   <span class="sub" id="company-badge"></span>
 </header>
+<div class="pausebar" id="pausebar">Automation is <b>PAUSED</b> for this company - nothing is posting. Resume it from the Dashboard.</div>
 <main>
 
   <!-- ============ DASHBOARD ============ -->
@@ -281,15 +291,17 @@
     <section>
       <h2>Overview</h2>
       <div class="stats">
+        <div class="stat"><div class="num" id="st-status">-</div><div class="lbl">Automation</div></div>
         <div class="stat"><div class="num" id="st-pending">-</div><div class="lbl">Waiting to post</div></div>
         <div class="stat"><div class="num" id="st-posted">-</div><div class="lbl">Posted</div></div>
-        <div class="stat"><div class="num" id="st-errors">-</div><div class="lbl">Errors</div></div>
         <div class="stat"><div class="num" id="st-campaigns">-</div><div class="lbl">Campaigns</div></div>
       </div>
       <div class="btnrow">
-        <button id="run-standard">Post now (standard post)</button>
+        <button id="toggle-pause">Pause automation</button>
+        <button id="run-standard" class="ghost">Post now (standard post)</button>
         <button id="refresh-overview" class="ghost">Refresh</button>
       </div>
+      <p class="note" id="pause-note"></p>
       <div id="run-status" class="status"></div>
     </section>
 
@@ -512,14 +524,40 @@
       </details>
 
       <details>
-        <summary>Pause, resume, or fix a mistake</summary>
+        <summary>Pause everything (and resume)</summary>
+        <div class="body">
+          <p>On the <b>Dashboard</b> there is a big <b>Pause automation</b> button.
+          Press it and the whole company stops instantly: no posts go out and no
+          new content is queued. A red banner appears across the top so it is
+          obvious. Nothing is lost - your months, dates and queued posts stay
+          exactly as they were.</p>
+          <p>Press <b>Resume automation</b> to switch it back on; due posts go out
+          on the next 15-minute run. Pausing is per company (it affects the one
+          shown in the "Active company" chip), so pausing one client never
+          affects another.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary>Fix a mistake without pausing everything</summary>
         <div class="body">
           <ul>
-            <li><b>Pause a month:</b> untick its checkbox and Save. Already-queued posts can be cancelled under Scheduled Posts.</li>
+            <li><b>Pause just one month:</b> untick its checkbox in Auto Posts and Save. Already-queued posts can be cancelled under Scheduled Posts.</li>
             <li><b>Cancel one post:</b> Scheduled Posts, press <b>Cancel</b> on the row. The photo is removed too.</li>
             <li><b>Wrong start date before anything posted:</b> change the date and Save - future days follow the new date. Posts already in the queue keep their old time; cancel them if needed and they re-queue on the next run.</li>
-            <li><b>Post something right now:</b> Scheduled Posts, <b>Process due posts now</b> pushes out anything overdue; Dashboard, <b>Post now</b> publishes a one-off standard post.</li>
+            <li><b>Post something right now:</b> Scheduled Posts, <b>Process due posts now</b> pushes out anything overdue.</li>
           </ul>
+        </div>
+      </details>
+
+      <details>
+        <summary>Do tokens ever expire? (No.)</summary>
+        <div class="body">
+          <p>Both Instagram and Facebook use tokens that <b>renew themselves</b>.
+          A weekly job refreshes the Instagram token and re-derives a permanent
+          Facebook Page token, writing the fresh values back automatically. Once
+          a company is set up, you never log in again or re-paste a token - it
+          just keeps running until you pause it.</p>
         </div>
       </details>
 
@@ -950,14 +988,78 @@ function refreshOverview() {
     });
     el("st-pending").textContent = counts.pending || 0;
     el("st-posted").textContent = counts.posted || 0;
-    el("st-errors").textContent = counts.error || 0;
   }).catch(function () {});
   loadConfig().then(function () {
     el("st-campaigns").textContent = Object.keys(configState.campaigns || {}).length;
   }).catch(function () {});
+  loadAutomation();
   loadActivity();
   loadRuns();
 }
+
+// ---- Pause / resume automation ----
+var AUTOMATION_PATH = "data/automation.json";
+var automationState = { paused: false, sha: null, loaded: false };
+
+function applyPausedUI() {
+  var p = automationState.paused;
+  el("pausebar").classList.toggle("show", p);
+  el("st-status").textContent = p ? "Paused" : "Running";
+  el("st-status").style.color = p ? "var(--err)" : "var(--ok)";
+  var btn = el("toggle-pause");
+  btn.textContent = p ? "Resume automation" : "Pause automation";
+  btn.className = p ? "" : "danger";
+  el("pause-note").textContent = p
+    ? "Paused: no posts go out and no new content is queued until you resume. Nothing is lost."
+    : "Running: the scheduler posts due content every 15 minutes.";
+}
+
+function loadAutomation() {
+  var s = settings();
+  return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + AUTOMATION_PATH +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
+    automationState.sha = r.sha;
+    automationState.paused = !!JSON.parse(b64decode(r.content)).paused;
+    automationState.loaded = true;
+    applyPausedUI();
+  }).catch(function () {
+    automationState.paused = false;
+    automationState.sha = null;
+    automationState.loaded = true;
+    applyPausedUI();
+  });
+}
+
+function setPaused(paused) {
+  var s = settings();
+  var btn = el("toggle-pause");
+  btn.disabled = true;
+  status("run-status", "info", paused ? "Pausing..." : "Resuming...");
+  var body = {
+    message: (paused ? "Pause" : "Resume") + " automation via dashboard",
+    content: b64encode(JSON.stringify({ paused: paused }, null, 2) + "\n"),
+    branch: s.branch
+  };
+  if (automationState.sha) body.sha = automationState.sha;
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + AUTOMATION_PATH, {
+    method: "PUT", body: JSON.stringify(body)
+  }).then(function (r) {
+    automationState.sha = r.content.sha;
+    automationState.paused = paused;
+    applyPausedUI();
+    status("run-status", "ok", paused
+      ? "Automation paused. Resume any time - nothing was lost."
+      : "Automation resumed. Due posts go out on the next run.");
+  }).catch(function (e) {
+    status("run-status", "err", "Failed: " + e.message);
+  }).then(function () { btn.disabled = false; });
+}
+
+el("toggle-pause").onclick = function () {
+  if (!automationState.loaded) { loadAutomation().then(function () { setPaused(!automationState.paused); }); return; }
+  if (!automationState.paused && !confirm("Pause automation for this company? Nothing will post until you resume.")) return;
+  setPaused(!automationState.paused);
+};
 
 function loadActivity() {
   var s = settings();
@@ -1686,10 +1788,15 @@ function renderCompanies() {
     var pagesUrl = "https://" + c.owner.toLowerCase() + ".github.io/" + c.repo + "/";
     var active = (c.owner === s.owner && c.repo === s.repo);
     var prog = wizardProgress(c);
+    var runPill = active && automationState.loaded
+      ? " <span class='pill " + (automationState.paused ? "err" : "ok") + "'>" +
+        (automationState.paused ? "paused" : "running") + "</span>"
+      : "";
     return "<div class='company'><h3>" + esc(c.name) +
-      (active ? " <span class='pill ok'>active</span>" : "") + "</h3>" +
+      (active ? " <span class='pill run'>active</span>" : "") + runPill + "</h3>" +
       "<div class='meta'>" + esc(c.owner + "/" + c.repo) + " (" + esc(c.branch) + ")" +
-      "  -  setup " + prog.done + "/" + prog.total + " steps verified</div>" +
+      "  -  setup " + prog.done + "/" + prog.total + " steps verified" +
+      (prog.done >= prog.total ? "  -  ready" : "  -  finish Guided setup") + "</div>" +
       "<div class='links'>" +
       "<a href='" + repoUrl + "' target='_blank' rel='noopener'>Repo</a>" +
       "<a href='" + repoUrl + "/settings/secrets/actions' target='_blank' rel='noopener'>Secrets</a>" +
@@ -1713,6 +1820,7 @@ function renderCompanies() {
       if (c.token) el("token").value = c.token;
       saveSettings(c.name);
       updateBadge(c.name);
+      automationState.loaded = false;
       status("companies-status", "ok", "Switched to " + c.name + ".");
       location.hash = "#dashboard";
       route();
@@ -1910,6 +2018,8 @@ el("nc-create").onclick = async function () {
       content: JSON.stringify({ posts: [] }, null, 2) + "\n" });
     changes.push({ path: "data/activity.json", mode: "100644", type: "blob",
       content: JSON.stringify({ entries: [] }, null, 2) + "\n" });
+    changes.push({ path: "data/automation.json", mode: "100644", type: "blob",
+      content: JSON.stringify({ paused: false }, null, 2) + "\n" });
     var newTree = await apiWith(token, "/repos/" + owner + "/" + repo + "/git/trees", {
       method: "POST",
       body: JSON.stringify({ base_tree: headCommit.tree.sha, tree: changes })
@@ -1925,13 +2035,18 @@ el("nc-create").onclick = async function () {
 
     appendLog("nc-status", "7/7 Saving " + name + " to your companies...");
     var list = companies();
-    list.push({ name: name, owner: owner, repo: repo, branch: "main", token: token });
+    var newCompany = { name: name, owner: owner, repo: repo, branch: "main", token: token };
+    list.push(newCompany);
     saveCompanies(list);
     appendLog("nc-status", "");
     appendLog("nc-status", "DONE. " + name + " is live at " + owner + "/" + repo + " on main.");
-    appendLog("nc-status", "Open Companies and press its Guided setup button to connect");
-    appendLog("nc-status", "Facebook, Instagram and GitHub Pages step by step.");
+    appendLog("nc-status", "Starting Guided setup so you can connect the accounts now...");
     el("nc-status").className = "status show ok";
+    // One-and-done: jump straight into the wizard for the new company.
+    el("nc-name").value = ""; el("nc-repo").value = "";
+    el("nc-desc").value = ""; el("nc-phone").value = ""; el("nc-site").value = "";
+    renderCompanies();
+    setTimeout(function () { openWizard(companies().length - 1); }, 900);
   } catch (e) {
     appendLog("nc-status", "FAILED: " + e.message);
     el("nc-status").className = "status show err";
@@ -2207,11 +2322,14 @@ function wizardSteps(c) {
       id: "done",
       title: "All connected",
       body: function () {
-        return "<p><b>" + esc(c.name) + " is ready.</b></p>" +
+        return "<p><b>" + esc(c.name) + " is ready. This is a set-and-forget setup.</b></p>" +
           "<ul><li>Switch to the company (Companies section) and open <b>Auto Posts</b>.</li>" +
           "<li>Bulk-upload a month of photos, set the month's start date and platforms, tick it, Save.</li>" +
-          "<li>From then on it posts itself: feed posts and stories to Instagram and Facebook, " +
-          "with unique captions, safety caps, and automatic token refresh.</li>" +
+          "<li>From then on it runs itself, forever: feed posts and stories to Instagram and " +
+          "Facebook, unique captions, safety caps, and <b>tokens that renew themselves</b> " +
+          "(nothing expires, no yearly re-login).</li>" +
+          "<li>You never need to touch it again until you want to stop it - the Dashboard has a " +
+          "<b>Pause automation</b> button that halts everything instantly and resumes just as easily.</li>" +
           "<li>The Dashboard's activity log shows every post and any platform errors.</li></ul>";
       },
       verify: null
