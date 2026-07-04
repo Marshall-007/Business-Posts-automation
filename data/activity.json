@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "at": "2026-07-04T10:25:00+00:00",
+      "item": "content_william-collins-ghost-1_month-1-day-1_story_csm-01-25-31404-23-easytouch-970-m-nobilia-meister-a06e1de0b4",
+      "platform": "facebook",
+      "kind": "story",
+      "ok": false,
+      "error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Saturday, 04-Jul-26 03:25:09 PDT."
+    },
+    {
+      "at": "2026-07-04T10:25:00+00:00",
+      "item": "content_william-collins-ghost-1_month-1-day-1_story_csm-01-25-31404-23-easytouch-970-m-nobilia-meister-a06e1de0b4",
+      "platform": "instagram",
+      "kind": "story",
+      "ok": true,
+      "post_id": "18435244516120406"
+    },
+    {
       "at": "2026-07-04T08:04:40+00:00",
       "item": "content_william-collins-ghost-1_month-1-day-1_feed_csm-00-kollektion-stage-73b577d26e",
       "platform": "facebook",
