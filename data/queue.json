@@ -255,8 +255,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-05T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18574947064067260",
+      "ig_post_id": "18574947064067260",
+      "posted_at": "2026-07-05T10:51:25+00:00",
+      "fb_error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Sunday, 05-Jul-26 03:51:37 PDT."
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-2_story_csm-02-designkuechen-c70872b74a",
