@@ -297,8 +297,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-05T18:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18083441687634978",
+      "ig_post_id": "18083441687634978",
+      "posted_at": "2026-07-05T19:11:32+00:00",
+      "fb_error": "Facebook API error: Error validating access token: Session has expired on Thursday, 02-Jul-26 23:00:00 PDT. The current time is Sunday, 05-Jul-26 12:11:44 PDT."
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-3_feed_csm-03-63-31292-23-senso-488-m-nobilia-meister-5215e44887",
