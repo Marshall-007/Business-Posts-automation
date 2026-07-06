@@ -1731,6 +1731,38 @@
       "scheduled_at": "2026-07-23T19:00:00+00:00",
       "status": "pending",
       "attempts": 0
+    },
+    {
+      "id": "fbfix_feed_1783331985",
+      "source": "manual-test",
+      "media_path": "docs/uploads/fbfix-feed-1783331985.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude/account-setup-config-569zpw/docs/uploads/fbfix-feed-1783331985.jpg",
+      "post_type": "feed",
+      "is_video": false,
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "caption": "Testing our automated posting is working smoothly again. Boards, fittings and finishes done right.\n\nCall us on 0813471724\nhttps://marshall-007.github.io/Gwalava-Boards/\n\n#GwalavaBoards #FurnitureFittings #KitchenDesign",
+      "scheduled_at": "2026-07-06T09:58:45+00:00",
+      "status": "pending",
+      "attempts": 0
+    },
+    {
+      "id": "fbfix_story_1783331985",
+      "source": "manual-test",
+      "media_path": "docs/uploads/fbfix-story-1783331985.jpg",
+      "media_url": "https://raw.githubusercontent.com/Marshall-007/Business-Posts-automation/claude/account-setup-config-569zpw/docs/uploads/fbfix-story-1783331985.jpg",
+      "post_type": "story",
+      "is_video": false,
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "caption": "",
+      "scheduled_at": "2026-07-06T09:58:45+00:00",
+      "status": "pending",
+      "attempts": 0
     }
   ]
 }
