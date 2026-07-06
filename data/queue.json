@@ -360,8 +360,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-06T16:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17889392832396154",
+      "ig_post_id": "17889392832396154",
+      "posted_at": "2026-07-06T17:15:28+00:00",
+      "fb_post_id": "4307297096228411"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-4_feed_csm-03-natural-living-zeitlose-kuechen-b3c20331c9",
