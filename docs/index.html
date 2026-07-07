@@ -1954,6 +1954,7 @@ function renderCompanies() {
       "<div class='btnrow'>" +
       "<button data-open='" + i + "' data-tip='Make this the active company across the dashboard'>Switch to</button>" +
       "<button class='ghost' data-wizard='" + i + "' data-tip='Connect GitHub, Facebook, Instagram and Pages step by step'>Guided setup</button>" +
+      "<button class='ghost' data-sync='" + i + "' data-tip='Push engine and workflow updates from the template to this company repo'>Sync updates</button>" +
       "<button class='danger' data-del='" + i + "' data-tip='Remove from this list only; the repository is not touched'>Remove</button>" +
       "</div></div>";
   }).join("");
@@ -1975,6 +1976,21 @@ function renderCompanies() {
   });
   wrap.querySelectorAll("[data-wizard]").forEach(function (b) {
     b.onclick = function () { openWizard(+b.getAttribute("data-wizard")); };
+  });
+  wrap.querySelectorAll("[data-sync]").forEach(function (b) {
+    b.onclick = function () {
+      var c = companies()[+b.getAttribute("data-sync")];
+      b.disabled = true; b.textContent = "Syncing...";
+      syncTemplateUpdates(c, function (line) {
+        status("companies-status", "info", line);
+      }).then(function (msg) {
+        status("companies-status", "ok", msg);
+        b.disabled = false; b.textContent = "Sync updates";
+      }).catch(function (e) {
+        status("companies-status", "err", e.message || e);
+        b.disabled = false; b.textContent = "Sync updates";
+      });
+    };
   });
   wrap.querySelectorAll("[data-del]").forEach(function (b) {
     b.onclick = function () {
@@ -2480,6 +2496,79 @@ async function seedFast(tok, base, branch, c, files, log) {
   await apiWith(tok, base + "/git/refs/heads/" + encodeURIComponent(branch), {
     method: "PATCH", body: JSON.stringify({ sha: commit.sha })
   });
+}
+
+
+var SYNC_PREFIXES = ["src/", ".github/workflows/", "docs/index.html", "docs/preview.html",
+  "docs/report.html", "requirements.txt"];
+
+function shouldSync(path) {
+  for (var i = 0; i < SYNC_PREFIXES.length; i++) {
+    if (path === SYNC_PREFIXES[i] || path.indexOf(SYNC_PREFIXES[i]) === 0) return true;
+  }
+  return false;
+}
+
+async function syncTemplateUpdates(c, log) {
+  var tok = wizToken(c);
+  if (!tok) throw new Error("Complete the GitHub token step first.");
+  var branch = c.branch || "main";
+  var tbase = "/repos/" + TEMPLATE.owner + "/" + TEMPLATE.repo;
+  var base = "/repos/" + c.owner + "/" + c.repo;
+
+  log("Reading the template...");
+  var tinfo = await apiWith(tok, tbase);
+  var tTree = await apiWith(tok, tbase + "/git/trees/" +
+    encodeURIComponent(tinfo.default_branch || "main") + "?recursive=1");
+  var templateFiles = {};
+  (tTree.tree || []).forEach(function (n) {
+    if (n.type === "blob" && shouldSync(n.path)) templateFiles[n.path] = n.sha;
+  });
+
+  log("Reading " + c.name + " repo...");
+  var ref = await apiWith(tok, base + "/git/ref/heads/" + encodeURIComponent(branch));
+  var parent = ref.object.sha;
+  var pc = await apiWith(tok, base + "/git/commits/" + parent);
+  var cTree = await apiWith(tok, base + "/git/trees/" + pc.tree.sha + "?recursive=1");
+  var clientFiles = {};
+  (cTree.tree || []).forEach(function (n) {
+    if (n.type === "blob") clientFiles[n.path] = n.sha;
+  });
+
+  var changed = [];
+  Object.keys(templateFiles).forEach(function (p) {
+    if (templateFiles[p] !== clientFiles[p]) changed.push(p);
+  });
+
+  if (!changed.length) return "Already up to date — no template changes to sync.";
+
+  log("Syncing " + changed.length + " changed files...");
+  var treeItems = [];
+  for (var i = 0; i < changed.length; i++) {
+    var blob = await apiWith(tok, tbase + "/git/blobs/" + templateFiles[changed[i]]);
+    var made = await apiWith(tok, base + "/git/blobs", {
+      method: "POST", body: JSON.stringify({ content: blob.content, encoding: "base64" })
+    });
+    treeItems.push({ path: changed[i], mode: "100644", type: "blob", sha: made.sha });
+    if (i % 10 === 9) log("  " + (i + 1) + "/" + changed.length + " files...");
+  }
+
+  log("Committing updates...");
+  var newTree = await apiWith(tok, base + "/git/trees", {
+    method: "POST", body: JSON.stringify({ base_tree: pc.tree.sha, tree: treeItems })
+  });
+  var commit = await apiWith(tok, base + "/git/commits", {
+    method: "POST",
+    body: JSON.stringify({
+      message: "Sync template updates (" + changed.length + " files)",
+      tree: newTree.sha, parents: [parent]
+    })
+  });
+  await apiWith(tok, base + "/git/refs/heads/" + encodeURIComponent(branch), {
+    method: "PATCH", body: JSON.stringify({ sha: commit.sha })
+  });
+  return "Synced " + changed.length + " files to " + c.owner + "/" + c.repo + ": " +
+    changed.map(function (p) { return p.split("/").pop(); }).join(", ");
 }
 
 
