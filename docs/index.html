@@ -747,7 +747,7 @@
             <li>Go to <code>https://github.com/settings/personal-access-tokens/new</code>.</li>
             <li><b>Token name:</b> e.g. "company-posts-automation". <b>Expiration:</b> choose <b>No expiration</b> (or 1 year and note the renewal date).</li>
             <li><b>Repository access:</b> Only select repositories, pick the company's repo.</li>
-            <li><b>Repository permissions:</b> set <b>Actions</b> to Read and write, <b>Contents</b> to Read and write, and <b>Secrets</b> to Read and write.</li>
+            <li><b>Repository permissions:</b> set <b>Actions</b>, <b>Contents</b>, <b>Secrets</b>, <b>Workflows</b> and <b>Administration</b> all to <b>Read and write</b>. (Workflows is needed to copy the automation workflow files into a new repo; Administration lets Guided setup set the default branch.)</li>
             <li>Click <b>Generate token</b> and copy it (it is shown once).</li>
             <li>This token is used twice: pasted into this dashboard's Settings (so the dashboard can act on the repo), and stored as the <code>GH_PAT</code> secret (so workflows can refresh platform tokens).</li>
           </ol>
@@ -823,7 +823,7 @@
       <details class="hint"><summary>How this works</summary>
         <ul>
           <li>The dashboard is a plain web page: it talks directly to the GitHub API with the token below. There is no other server, and the token is stored only in this browser.</li>
-          <li>The token needs Actions, Contents and Secrets permissions (read/write) on this one repository - see Setup Instructions section 5.</li>
+          <li>The token needs Actions, Contents, Secrets, Workflows and Administration permissions (read/write) on this one repository - see Setup Instructions section 5.</li>
         </ul>
       </details>
       <div class="row">
@@ -2360,17 +2360,16 @@ async function seedRepoFromTemplate(c, log) {
   });
   if (!blobs.length) throw new Error("The template has no files to copy.");
 
-  log("Copying " + blobs.length + " files into " + owner + "/" + repo + "...");
-  var items = [];
+  // Pull each template file's bytes into memory once (base64). We keep the
+  // content so we can write it either as a single batch commit (fast) or file
+  // by file (fallback) without re-downloading.
+  log("Copying " + blobs.length + " files from the template...");
+  var files = [];
   for (var i = 0; i < blobs.length; i++) {
     var n = blobs[i];
     var blob = await apiWith(tok, tbase + "/git/blobs/" + n.sha);
-    var made = await apiWith(tok, base + "/git/blobs", {
-      method: "POST",
-      body: JSON.stringify({ content: blob.content, encoding: "base64" })
-    });
-    items.push({ path: n.path, mode: n.mode, type: "blob", sha: made.sha });
-    if (i % 10 === 9) log("  " + (i + 1) + "/" + blobs.length + " files...");
+    files.push({ path: n.path, mode: n.mode || "100644", b64: (blob.content || "").replace(/\n/g, "") });
+    if (i % 15 === 14) log("  " + (i + 1) + "/" + blobs.length + " files...");
   }
 
   // Personalize config.yaml and start every data file clean.
@@ -2382,23 +2381,84 @@ async function seedRepoFromTemplate(c, log) {
     "data/activity.json": JSON.stringify({ entries: [] }, null, 2) + "\n",
     "data/automation.json": JSON.stringify({ paused: false }, null, 2) + "\n"
   };
-  items = items.filter(function (it) { return !(it.path in overrides); });
+  files = files.filter(function (f) { return !(f.path in overrides); });
   Object.keys(overrides).forEach(function (p) {
-    items.push({ path: p, mode: "100644", type: "blob", content: overrides[p] });
+    files.push({ path: p, mode: "100644", b64: b64encode(overrides[p]) });
   });
 
-  log("Building the commit...");
-  var newTree = await apiWith(tok, base + "/git/trees", {
-    method: "POST", body: JSON.stringify({ tree: items })
-  });
+  try {
+    await seedFast(tok, base, branch, c, files, log);
+  } catch (e) {
+    // The most common cause of "Resource not accessible by personal access
+    // token" here is a token that lacks the Workflows permission: the copy
+    // includes .github/workflows files, which a PAT may not write without it.
+    if (e.status === 403 || /not accessible|workflow/i.test(e.message || "")) {
+      throw new Error("GitHub refused the commit: \"" + e.message + "\". This almost " +
+        "always means the token is missing the \"Workflows\" permission, which is " +
+        "required to copy the automation workflow files. Open your token at " +
+        "github.com/settings/personal-access-tokens, set \"Workflows\" to Read and write " +
+        "(keep Actions, Contents and Secrets as Read and write), save, then click the " +
+        "button again.");
+    }
+    throw e;
+  }
 
-  // Commit onto the branch: with a parent if it already exists, otherwise the
-  // repo's first commit, then create the branch ref.
-  var parent = null;
+  // Make sure the branch we just wrote is the repo's default (so Pages defaults to it).
+  try {
+    await apiWith(tok, base, { method: "PATCH", body: JSON.stringify({ default_branch: branch }) });
+  } catch (e) { /* not fatal */ }
+
+  // Remove the temporary init placeholder if it is still around.
+  try {
+    var ph = await apiWith(tok, base + "/contents/SETUP_IN_PROGRESS.md?ref=" + encodeURIComponent(branch));
+    await apiWith(tok, base + "/contents/SETUP_IN_PROGRESS.md", {
+      method: "DELETE",
+      body: JSON.stringify({ message: "Remove setup placeholder", sha: ph.sha, branch: branch })
+    });
+  } catch (e) { /* nothing to remove */ }
+
+  log("Done. " + owner + "/" + repo + " now has the " + branch + " branch and /docs folder.");
+}
+
+// Fast path: one batch commit via the Git Data API. Initializes an empty repo
+// through the Contents API first, because the Git Data API cannot create the
+// very first tree/commit on a repository that has no commits yet.
+async function seedFast(tok, base, branch, c, files, log) {
+  var parent = null, baseTree = null, initPath = null;
   try {
     var ref = await apiWith(tok, base + "/git/ref/heads/" + encodeURIComponent(branch));
     parent = ref.object.sha;
-  } catch (e) { parent = null; }
+    var pc = await apiWith(tok, base + "/git/commits/" + parent);
+    baseTree = pc.tree.sha;
+  } catch (e) {
+    log("Initializing the " + branch + " branch...");
+    initPath = "SETUP_IN_PROGRESS.md";
+    var init = await apiWith(tok, base + "/contents/" + initPath, {
+      method: "PUT",
+      body: JSON.stringify({ message: "Initialize repository",
+        content: b64encode("Setting up automation..."), branch: branch })
+    });
+    parent = init.commit.sha;
+    var pc2 = await apiWith(tok, base + "/git/commits/" + parent);
+    baseTree = pc2.tree.sha;
+  }
+
+  log("Uploading " + files.length + " files...");
+  var treeItems = [];
+  for (var i = 0; i < files.length; i++) {
+    var made = await apiWith(tok, base + "/git/blobs", {
+      method: "POST", body: JSON.stringify({ content: files[i].b64, encoding: "base64" })
+    });
+    treeItems.push({ path: files[i].path, mode: files[i].mode, type: "blob", sha: made.sha });
+    if (i % 15 === 14) log("  " + (i + 1) + "/" + files.length + " files...");
+  }
+  if (initPath) treeItems.push({ path: initPath, mode: "100644", type: "blob", sha: null });
+
+  log("Building the commit...");
+  var newTree = await apiWith(tok, base + "/git/trees", {
+    method: "POST",
+    body: JSON.stringify(baseTree ? { base_tree: baseTree, tree: treeItems } : { tree: treeItems })
+  });
   var commit = await apiWith(tok, base + "/git/commits", {
     method: "POST",
     body: JSON.stringify({
@@ -2406,24 +2466,11 @@ async function seedRepoFromTemplate(c, log) {
       tree: newTree.sha, parents: parent ? [parent] : []
     })
   });
-  if (parent) {
-    await apiWith(tok, base + "/git/refs/heads/" + encodeURIComponent(branch), {
-      method: "PATCH", body: JSON.stringify({ sha: commit.sha })
-    });
-  } else {
-    await apiWith(tok, base + "/git/refs", {
-      method: "POST",
-      body: JSON.stringify({ ref: "refs/heads/" + branch, sha: commit.sha })
-    });
-  }
-  // Make sure the branch we just wrote is the repo's default (so Pages defaults to it).
-  try {
-    await apiWith(tok, base, {
-      method: "PATCH", body: JSON.stringify({ default_branch: branch })
-    });
-  } catch (e) { /* not fatal */ }
-  log("Done. " + owner + "/" + repo + " now has the " + branch + " branch and /docs folder.");
+  await apiWith(tok, base + "/git/refs/heads/" + encodeURIComponent(branch), {
+    method: "PATCH", body: JSON.stringify({ sha: commit.sha })
+  });
 }
+
 
 function wizardSteps(c) {
   var st = wizState(c);
@@ -2452,7 +2499,8 @@ function wizardSteps(c) {
           "<ol><li>Open <a href='https://github.com/settings/personal-access-tokens/new' target='_blank' rel='noopener'>github.com/settings/personal-access-tokens/new</a>.</li>" +
           "<li><b>Token name:</b> " + esc(c.repo) + "-automation. <b>Expiration:</b> No expiration.</li>" +
           "<li><b>Repository access:</b> Only select repositories, choose <b>" + esc(c.repo) + "</b>.</li>" +
-          "<li><b>Permissions:</b> Actions - Read and write; Contents - Read and write; Secrets - Read and write.</li>" +
+          "<li><b>Permissions:</b> Actions - Read and write; Contents - Read and write; " +
+          "Secrets - Read and write; Workflows - Read and write; Administration - Read and write.</li>" +
           "<li>Press <b>Generate token</b> and paste it below.</li></ol>" +
           field("wz-ghpat", "Paste the GitHub token", { masked: true, value: st.ghpat || "" }) +
           "<p>Then also store it as a repository secret (used by the token-refresh workflow):</p>" +
@@ -2628,7 +2676,9 @@ function wizardSteps(c) {
           "<p><b>Easiest fix:</b> press <b>Create the " + esc(c.branch) + " branch and /docs folder</b> " +
           "above. It copies the automation code, the scheduled workflows and the dashboard into this " +
           "repository on the <b>" + esc(c.branch) + "</b> branch (about a minute), so everything below " +
-          "then works.</p>" +
+          "then works. Your GitHub token must have the <b>Workflows</b> permission (Read and write) for " +
+          "this - it copies workflow files - so if the button reports it is not accessible, add that " +
+          "permission to the token and try again.</p>" +
           "<p><b>Or do it by hand on GitHub:</b></p><ol>" +
           "<li>Open the repository. If it is completely empty, press <b>Add file, Create new file</b>, " +
           "type <code>docs/index.html</code> as the name (the <code>docs/</code> creates the folder), " +
