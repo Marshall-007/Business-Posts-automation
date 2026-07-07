@@ -44,6 +44,15 @@
   .edit-actions .save { background: var(--accent); color: #fff; border-color: var(--accent); }
   .note { color: var(--muted); background: var(--panel); border: 1px solid var(--line);
     border-radius: 14px; padding: 22px; text-align: center; margin-top: 20px; }
+  /* Once the queue grows past ~10 posts the list scrolls inside itself instead
+     of pushing the page down forever. */
+  .scroller { max-height: 760px; overflow-y: auto; padding-right: 6px; margin-top: 4px;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .scroller .day:first-child { margin-top: 14px; }
+  .scroller .day { padding: 0 14px; }
+  .scroller::-webkit-scrollbar { width: 8px; }
+  .scroller::-webkit-scrollbar-thumb { background: var(--line); border-radius: 8px; }
+  .scroll-hint { text-align: center; color: var(--muted); font-size: 12px; margin: 8px 0 0; }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 34px; }
 </style>
 </head>
@@ -106,6 +115,11 @@
       (byDay[key] = byDay[key] || []).push(it);
     });
 
+    // Past ~10 queued posts the list scrolls inside its own panel so the page
+    // stays a fixed height instead of running on forever.
+    var SCROLL_AFTER = 10;
+    var scroll = upcoming.length > SCROLL_AFTER;
+
     var html = "";
     Object.keys(byDay).forEach(function (key) {
       var label = new Date(key).toLocaleDateString(undefined,
@@ -131,6 +145,11 @@
       });
       html += "</div></div>";
     });
+    if (scroll) {
+      html = "<div class='scroller'>" + html + "</div>" +
+        "<p class='scroll-hint'>Showing " + upcoming.length +
+        " queued posts &mdash; scroll inside the list to see them all.</p>";
+    }
     document.getElementById("content").innerHTML = html;
     document.querySelectorAll("[data-edit]").forEach(function (b) {
       b.onclick = function () { startEdit(b.getAttribute("data-edit")); };
