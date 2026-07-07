@@ -1290,14 +1290,18 @@ function renderQueue() {
   var rows = queueState.items.map(function (it) {
     var when = new Date(it.scheduled_at).toLocaleString();
     var cls = it.status === "posted" ? "ok" : (it.status === "error" ? "err" : "run");
-    var cap = it.caption ? esc(it.caption.slice(0, 60)) : "(no caption)";
+    var full = it.caption || "";
+    var cap = it.post_type === "story" ? "<span style='color:var(--muted)'>(story - no caption)</span>"
+      : (full ? "<span title='" + esc(full) + "'>" + esc(full.slice(0, 140)) +
+                (full.length > 140 ? "…" : "") + "</span>"
+              : "<span style='color:var(--muted)'>(no caption)</span>");
     var type = (it.post_type === "story") ? "story" : (it.is_video ? "reel" : "image");
     var plats = (it.platforms || PLATFORMS).filter(function (p) {
       return PLATFORMS.indexOf(p) >= 0 || it.platforms;
     }).map(platformIcon).join("");
     var cancel = (it.status === "pending" || it.status === "error")
       ? "<button class='danger' data-cancel='" + esc(it.id) + "'>Cancel</button>" : "";
-    return "<tr><td>" + esc(type) + "</td><td>" + plats + "</td><td>" + cap + "</td><td>" + esc(when) + "</td>" +
+    return "<tr><td>" + esc(type) + "</td><td>" + plats + "</td><td class='capcell'>" + cap + "</td><td>" + esc(when) + "</td>" +
       "<td><span class='pill " + cls + "'>" + esc(it.status) + "</span></td>" +
       "<td>" + cancel + "</td></tr>";
   }).join("");
