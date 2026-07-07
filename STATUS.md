@@ -58,7 +58,12 @@ and **Settings** (connection). Highlights:
 | Analytics report (likes/comments/reach) + client report page | BUILT | src/report.py + weekly job + Reports view + docs/report.html + tests |
 | Client content preview (shareable, read-only) | BUILT | docs/preview.html + Scheduled Posts link |
 | Company list backup / restore (portable registry) | BUILT | Companies section export/import |
-| Test suite | GREEN | 80 tests, CI on every push |
+| Per-campaign caption mode (one fixed caption or auto-varied) | BUILT | engine + Auto Posts controls + tests |
+| Per-campaign custom hashtags (added on top of auto tags) | BUILT | engine + dashboard + tests |
+| Per-campaign rotating auto-comments (IG + FB, after each post) | BUILT | engine + dashboard + tests |
+| Company-branded captions (no cross-company leak) | BUILT | name-derived defaults + tests |
+| Sync updates: push template fixes to client repos | BUILT | Companies section button |
+| Test suite | GREEN | 94 tests, CI on every push |
 
 
 ## LIVE right now (audit 2026-07-03)
@@ -114,6 +119,25 @@ and **Settings** (connection). Highlights:
   local by design) can be exported to a JSON file and restored on another
   machine from the Companies section, so the list is portable and safe from
   a cleared browser. Tokens are included, so the file is stored privately.
+- **Per-campaign captions, hashtags & comments** (Auto Posts -> each month ->
+  "Captions, hashtags & comments"):
+  - *Caption:* choose **auto** (a unique caption per post) or **one fixed
+    caption** you write, reused on every post in that month.
+  - *Custom hashtags:* type one set (spaces/commas, the `#` is optional); they
+    are added to every post on top of the auto tags, deduped and capped at 30.
+  - *Comments:* add/edit/remove a list of comments; the engine rotates one onto
+    each feed post (reused in order) and posts it under the post on **both**
+    Instagram and Facebook after it publishes. Stories are never commented on;
+    comment failures never affect the post. The chosen caption and comment are
+    frozen into the queue, so `preview.html` shows exactly what will go out.
+- **Company-branded captions (leak fix):** the built-in caption defaults are now
+  generic and derive the brand hashtag from `business.name`, so a new company
+  (e.g. Leshaw) never inherits another company's wording or `#Gwalava` tags.
+  Gwalava keeps its own board-specific copy via the `captions:` section in
+  config.yaml.
+- **Sync updates:** each company card has a **Sync updates** button that pushes
+  engine/workflow/dashboard fixes from the template repo to that client repo in
+  one commit (never touches data, content or config).
 
 ## How a new client is onboarded (repeatable)
 

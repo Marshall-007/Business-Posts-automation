@@ -1473,6 +1473,62 @@ function monthsOf(c) {
   return order.map(function (k) { return { key: k, days: byKey[k] }; });
 }
 
+// Turn a free-typed string ("#a b, c") into a clean, deduped list of #tags.
+function normalizeTagList(value) {
+  if (!value) return [];
+  var out = [], seen = {};
+  String(value).split(/[\s,]+/).forEach(function (p) {
+    p = p.trim();
+    if (!p) return;
+    p = "#" + p.replace(/^#+/, "");
+    if (p === "#") return;
+    var k = p.toLowerCase();
+    if (!seen[k]) { seen[k] = 1; out.push(p); }
+  });
+  return out;
+}
+
+function commentRowHtml(text) {
+  return "<div class='comment-row' style='display:flex;gap:6px;margin-bottom:6px;'>" +
+    "<textarea class='mb-comment' rows='1' style='flex:1;min-height:34px;' " +
+    "placeholder='A comment to post under the post'>" + esc(text || "") + "</textarea>" +
+    "<button type='button' class='ghost rm-comment' title='Remove this comment' " +
+    "style='padding:4px 10px;'>&times;</button></div>";
+}
+
+function contentControlsHtml(ci, mi, mcfg) {
+  var capMode = mcfg.caption_mode === "fixed" ? "fixed" : "auto";
+  var fixedCap = mcfg.fixed_caption || "";
+  var tagsStr = Array.isArray(mcfg.custom_tags) ? mcfg.custom_tags.join(" ") : (mcfg.custom_tags || "");
+  var comments = Array.isArray(mcfg.comments) ? mcfg.comments : [];
+  var d = "data-c='" + ci + "' data-m='" + mi + "'";
+  return "<details class='content-controls' style='margin-top:8px;'>" +
+    "<summary>Captions, hashtags &amp; comments</summary>" +
+    "<div style='padding:8px 2px 2px;'>" +
+
+    "<label>Caption for every post in this month</label>" +
+    "<select class='mb-capmode' " + d + " style='margin-bottom:8px;'>" +
+    "<option value='auto'" + (capMode === "auto" ? " selected" : "") + ">Auto — a unique caption per post</option>" +
+    "<option value='fixed'" + (capMode === "fixed" ? " selected" : "") + ">One caption I write, used on every post</option>" +
+    "</select>" +
+    "<div class='fixed-cap-wrap' " + d + " style='" + (capMode === "fixed" ? "" : "display:none;") + "'>" +
+    "<label>Your caption (reused on every post in this month)</label>" +
+    "<textarea class='mb-fixedcap' " + d + " rows='3' placeholder='Type the caption that every post should use...'>" +
+    esc(fixedCap) + "</textarea></div>" +
+
+    "<label style='margin-top:8px;'>Custom hashtags (added to every post, on top of the auto tags)</label>" +
+    "<textarea class='mb-tags' " + d + " rows='2' " +
+    "placeholder='#YourBrand #Sale #Special (spaces or commas, the # is optional)'>" + esc(tagsStr) + "</textarea>" +
+
+    "<label style='margin-top:8px;'>Comments (rotated onto posts, reused in order; leave empty for none)</label>" +
+    "<div class='comments-editor' " + d + ">" +
+    "<div class='comment-rows'>" + comments.map(commentRowHtml).join("") + "</div>" +
+    "<button type='button' class='ghost add-comment' " + d + " style='margin-top:2px;'>+ Add comment</button>" +
+    "</div>" +
+
+    "</div></details>";
+}
+
 function renderCampaigns() {
   var wrap = el("campaign-list");
   if (!campaignsData.length) {
@@ -1541,6 +1597,7 @@ function renderCampaigns() {
         "<input type='checkbox' class='mb-approve' data-c='" + ci + "' data-m='" + mi + "'" +
         (approved ? " checked" : "") + ">" +
         "<span>Approved to post</span></label>" +
+        contentControlsHtml(ci, mi, mcfg) +
         "<details><summary>Day-by-day plan</summary>" +
         "<table><thead><tr><th>Day</th><th>Posts on</th><th>Feed</th><th>Stories</th><th>State</th></tr></thead><tbody>" +
         rows + "</tbody></table></details>" +
@@ -1566,6 +1623,31 @@ function renderCampaigns() {
   wrap.querySelectorAll("[data-newday]").forEach(function (b) {
     b.onclick = function () { createNextDay(+b.getAttribute("data-newday")); };
   });
+  // Show/hide the fixed-caption box as the caption mode changes.
+  wrap.querySelectorAll(".mb-capmode").forEach(function (sel) {
+    sel.onchange = function () {
+      var w = wrap.querySelector(".fixed-cap-wrap[data-c='" + sel.getAttribute("data-c") +
+        "'][data-m='" + sel.getAttribute("data-m") + "']");
+      if (w) w.style.display = sel.value === "fixed" ? "" : "none";
+    };
+  });
+  // Add / remove rotating comments.
+  wrap.querySelectorAll(".add-comment").forEach(function (b) {
+    b.onclick = function () {
+      var ed = wrap.querySelector(".comments-editor[data-c='" + b.getAttribute("data-c") +
+        "'][data-m='" + b.getAttribute("data-m") + "']");
+      var rows = ed.querySelector(".comment-rows");
+      var tmp = document.createElement("div");
+      tmp.innerHTML = commentRowHtml("");
+      var row = tmp.firstChild;
+      rows.appendChild(row);
+      row.querySelector(".rm-comment").onclick = function () { row.remove(); };
+      row.querySelector(".mb-comment").focus();
+    };
+  });
+  wrap.querySelectorAll(".rm-comment").forEach(function (b) {
+    b.onclick = function () { b.closest(".comment-row").remove(); };
+  });
   updateBulkDatalist();
 }
 
@@ -1589,7 +1671,32 @@ function saveCampaign(ci) {
     if (en && !start) problems.push((m.key || "Ungrouped days") + " needs a start date");
     if (en && !plats.length) problems.push((m.key || "Ungrouped days") + " needs at least one platform");
     if (en) anyOn = true;
-    batches[m.key] = { enabled: en, approved: approved, start_date: start, platforms: plats };
+
+    // Per-month content controls: caption mode + fixed caption, custom tags,
+    // and the rotating comment list.
+    var capSel = document.querySelector(".mb-capmode[data-c='" + ci + "'][data-m='" + mi + "']");
+    var captionMode = capSel ? capSel.value : "auto";
+    var fixedBox = document.querySelector(".mb-fixedcap[data-c='" + ci + "'][data-m='" + mi + "']");
+    var fixedCaption = fixedBox ? fixedBox.value.trim() : "";
+    var tagsBox = document.querySelector(".mb-tags[data-c='" + ci + "'][data-m='" + mi + "']");
+    var customTags = normalizeTagList(tagsBox ? tagsBox.value : "");
+    var editor = document.querySelector(".comments-editor[data-c='" + ci + "'][data-m='" + mi + "']");
+    var comments = [];
+    if (editor) {
+      editor.querySelectorAll(".mb-comment").forEach(function (t) {
+        var v = t.value.trim();
+        if (v) comments.push(v);
+      });
+    }
+    if (en && captionMode === "fixed" && !fixedCaption) {
+      problems.push((m.key || "Ungrouped days") + " is set to one fixed caption but none is typed");
+    }
+
+    batches[m.key] = {
+      enabled: en, approved: approved, start_date: start, platforms: plats,
+      caption_mode: captionMode, fixed_caption: fixedCaption,
+      custom_tags: customTags, comments: comments
+    };
   });
   if (problems.length) {
     status("content-status", "err", "Fix before saving: " + problems.join("; ") + ".");

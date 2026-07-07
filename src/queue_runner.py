@@ -241,12 +241,14 @@ def process_due(
                 failures.append({"item": item.get("id"), "platform": platform,
                                  "kind": kind, "error": detail})
 
+        posted_ids: dict[str, str] = {}
         try:
             post_id = publish_to(primary)
             item["status"] = "posted"
             item["post_id"] = post_id
             item[ID_FIELD[primary]] = post_id
             item["posted_at"] = now.isoformat(timespec="seconds")
+            posted_ids[primary] = post_id
             changed = True
             record(primary, True, post_id)
             print(f"[ok] posted {item['id']} to {primary} ({kind}, post id {post_id})")
@@ -261,6 +263,7 @@ def process_due(
                     mirror_id = publish_to(platform)
                     item[ID_FIELD[platform]] = mirror_id
                     item.pop(ERR_FIELD[platform], None)
+                    posted_ids[platform] = mirror_id
                     record(platform, True, mirror_id)
                     print(f"     cross-posted to {platform} (post id {mirror_id})")
                 except (PostError, Exception) as exc:  # noqa: BLE001
@@ -268,6 +271,27 @@ def process_due(
                     record(platform, False, str(exc))
                     print(f"     [warn] {platform} cross-post failed: {exc}",
                           file=sys.stderr)
+
+            # Rotate a comment onto the post it just published (best-effort on
+            # every platform it reached). A comment failure never undoes a post.
+            comment = (item.get("comment") or "").strip()
+            for platform, pid in (posted_ids.items() if comment else []):
+                plat_obj = ig if platform == "instagram" else facebook
+                try:
+                    cid = plat_obj.post_comment(pid, comment)
+                    log_activity(root, {
+                        "at": now.isoformat(timespec="seconds"),
+                        "item": item.get("id"), "platform": platform,
+                        "kind": "comment", "ok": True, "post_id": cid,
+                    })
+                    print(f"     commented on {platform} ({cid})")
+                except Exception as exc:  # noqa: BLE001 - comments never break a run
+                    log_activity(root, {
+                        "at": now.isoformat(timespec="seconds"),
+                        "item": item.get("id"), "platform": platform,
+                        "kind": "comment", "ok": False, "error": str(exc),
+                    })
+                    print(f"     [warn] {platform} comment failed: {exc}", file=sys.stderr)
 
             # Remove the media from the repo now that it is published.
             media = root / media_path if media_path else None

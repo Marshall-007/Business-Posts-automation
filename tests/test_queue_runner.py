@@ -295,6 +295,59 @@ def test_activity_log_records_successes_and_story_failures(
     assert "Page does not have permission" in by_platform["facebook"]["error"]
 
 
+def test_comment_is_posted_on_both_platforms_after_publish(
+        tmp_path, ig_env, fb_env, fake_publish, monkeypatch):
+    # A queue item carrying a "comment" gets it posted onto both the Instagram
+    # and Facebook posts, and logged to the activity feed.
+    monkeypatch.setattr(Facebook, "publish_media", lambda self, *a, **k: "fb_1")
+    ig_comments, fb_comments = [], []
+    monkeypatch.setattr(Instagram, "post_comment",
+                        lambda self, pid, msg: ig_comments.append((pid, msg)) or "igc")
+    monkeypatch.setattr(Facebook, "post_comment",
+                        lambda self, pid, msg: fb_comments.append((pid, msg)) or "fbc")
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path, platforms=["instagram", "facebook"],
+                          comment="Love this!")])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert ig_comments == [("post_123", "Love this!")]
+    assert fb_comments == [("fb_1", "Love this!")]
+    log = json.loads((tmp_path / "data/activity.json").read_text())["entries"]
+    kinds = {(e["platform"], e["kind"], e["ok"]) for e in log}
+    assert ("instagram", "comment", True) in kinds
+    assert ("facebook", "comment", True) in kinds
+
+
+def test_comment_failure_never_breaks_the_post(
+        tmp_path, ig_env, fake_publish, monkeypatch):
+    def boom(self, pid, msg):
+        raise RuntimeError("comment API down")
+
+    monkeypatch.setattr(Instagram, "post_comment", boom)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path, comment="Hi")])
+
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert items[0]["status"] == "posted"                   # post still succeeded
+    assert not (tmp_path / "docs/uploads/a.jpg").exists()    # media cleaned up
+    log = json.loads((tmp_path / "data/activity.json").read_text())["entries"]
+    assert any(e["kind"] == "comment" and e["ok"] is False for e in log)
+
+
+def test_no_comment_call_when_item_has_no_comment(
+        tmp_path, ig_env, fake_publish, monkeypatch):
+    called = []
+    monkeypatch.setattr(Instagram, "post_comment", lambda self, *a: called.append(1))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])                       # no "comment" field
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert called == []
+
+
 def test_paused_automation_posts_nothing(tmp_path, ig_env, fake_publish):
     qp = tmp_path / "data/queue.json"
     write_queue(qp, [item(tmp_path)])
