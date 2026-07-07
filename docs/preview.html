@@ -33,6 +33,15 @@
   .tag.feed { background: rgba(22,163,74,.12); color: #16a34a; }
   .tag.ig { background: rgba(214,36,159,.12); color: var(--ig); }
   .tag.fb { background: rgba(24,119,242,.12); color: var(--fb); }
+  .editbtn { margin-top: 8px; font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--accent); cursor: pointer; }
+  .editbtn:hover { border-color: var(--accent); }
+  .edit-area { width: 100%; min-height: 96px; font: inherit; padding: 8px; margin-top: 4px;
+    border: 1px solid var(--accent); border-radius: 8px; resize: vertical; }
+  .edit-actions { margin-top: 6px; display: flex; gap: 8px; }
+  .edit-actions button { padding: 5px 14px; border-radius: 8px; border: 1px solid var(--line);
+    cursor: pointer; font-weight: 600; font-size: 13px; background: var(--panel); }
+  .edit-actions .save { background: var(--accent); color: #fff; border-color: var(--accent); }
   .note { color: var(--muted); background: var(--panel); border: 1px solid var(--line);
     border-radius: 14px; padding: 22px; text-align: center; margin-top: 20px; }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 34px; }
@@ -42,8 +51,8 @@
 <div class="wrap">
   <header>
     <h1><span id="biz" class="biz">Your Business</span></h1>
-    <div class="sub">Upcoming content preview</div>
-    <div class="sub">This is what is scheduled to be published. Let us know if anything should change.</div>
+    <div class="sub">Upcoming content preview &mdash; the next 7 days</div>
+    <div class="sub">This is what is scheduled to be published. Tap <b>Edit caption</b> to change any caption here.</div>
   </header>
   <div id="content"><div class="note">Loading the upcoming schedule...</div></div>
   <footer>Automated social media posting. Schedule shown in your local time.</footer>
@@ -58,11 +67,16 @@
   var bizParam = qp("biz", "");
   if (bizParam) document.getElementById("biz").textContent = bizParam;
 
+  var TOKEN_KEY = "preview_token_" + repo;
+  var itemsCache = [];
+
   function escapeHtml(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function b64decode(b64) { return decodeURIComponent(escape(atob((b64 || "").replace(/\n/g, "")))); }
+  function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
 
   function platTags(plats) {
     plats = plats || ["instagram", "facebook"];
@@ -71,21 +85,24 @@
   }
 
   function render(items) {
+    itemsCache = items;
     var now = new Date();
+    var weekAhead = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     var upcoming = items.filter(function (it) {
-      return it.status === "pending" && it.scheduled_at && new Date(it.scheduled_at) >= now;
+      if (it.status !== "pending" || !it.scheduled_at) return false;
+      var t = new Date(it.scheduled_at);
+      return t >= now && t <= weekAhead;   // only the next 7 days
     }).sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
 
     if (!upcoming.length) {
       document.getElementById("content").innerHTML =
-        "<div class='note'>No upcoming posts are scheduled right now. New content will appear here once it is loaded.</div>";
+        "<div class='note'>No posts are scheduled in the next 7 days. New content appears here once it is loaded.</div>";
       return;
     }
 
     var byDay = {};
     upcoming.forEach(function (it) {
-      var d = new Date(it.scheduled_at);
-      var key = d.toDateString();
+      var key = new Date(it.scheduled_at).toDateString();
       (byDay[key] = byDay[key] || []).push(it);
     });
 
@@ -97,15 +114,17 @@
       byDay[key].forEach(function (it) {
         var time = new Date(it.scheduled_at).toLocaleTimeString(undefined,
           { hour: "numeric", minute: "2-digit" });
-        var typeTag = it.post_type === "story"
+        var isStory = it.post_type === "story";
+        var typeTag = isStory
           ? "<span class='tag story'>Story</span>" : "<span class='tag feed'>Post</span>";
         var thumb = it.media_url
           ? "<img class='thumb' loading='lazy' src='" + escapeHtml(it.media_url) + "' alt=''>"
           : "<div class='thumb'></div>";
-        var cap = it.post_type === "story"
+        var cap = isStory
           ? "<div class='cap' style='color:var(--muted);'>Story (no caption)</div>"
-          : "<div class='cap'>" + escapeHtml(it.caption || "(no caption)") + "</div>";
-        html += "<div class='post'>" + thumb + "<div class='body'>" +
+          : "<div class='cap'>" + escapeHtml(it.caption || "(no caption)") + "</div>" +
+            "<button class='editbtn' data-edit='" + escapeHtml(it.id) + "'>Edit caption</button>";
+        html += "<div class='post' data-id='" + escapeHtml(it.id) + "'>" + thumb + "<div class='body'>" +
           "<div class='when'>" + escapeHtml(time) + "</div>" +
           "<div style='margin:6px 0;'>" + typeTag + platTags(it.platforms) + "</div>" +
           cap + "</div></div>";
@@ -113,6 +132,76 @@
       html += "</div></div>";
     });
     document.getElementById("content").innerHTML = html;
+    document.querySelectorAll("[data-edit]").forEach(function (b) {
+      b.onclick = function () { startEdit(b.getAttribute("data-edit")); };
+    });
+  }
+
+  function startEdit(id) {
+    var post = document.querySelector(".post[data-id='" + cssEsc(id) + "']");
+    var item = itemsCache.filter(function (x) { return x.id === id; })[0];
+    if (!post || !item) return;
+    var body = post.querySelector(".body");
+    var cap = post.querySelector(".cap");
+    var btn = post.querySelector(".editbtn");
+    var current = item.caption || "";
+    cap.innerHTML = "<textarea class='edit-area'></textarea>" +
+      "<div class='edit-actions'><button class='save'>Save</button>" +
+      "<button class='cancel'>Cancel</button></div>";
+    if (btn) btn.style.display = "none";
+    var ta = cap.querySelector(".edit-area");
+    ta.value = current; ta.focus();
+    cap.querySelector(".cancel").onclick = function () { render(itemsCache); };
+    cap.querySelector(".save").onclick = function () { saveCaption(id, ta.value, cap); };
+  }
+
+  function cssEsc(s) { return String(s).replace(/'/g, "\\'"); }
+
+  function saveCaption(id, newCaption, capEl) {
+    var token = localStorage.getItem(TOKEN_KEY) || "";
+    if (!token) {
+      token = prompt("Paste a GitHub token with write access to " + repo +
+        " to save caption edits (stored only in this browser):");
+      if (!token) return;
+      token = token.trim();
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+    var saveBtn = capEl.querySelector(".save");
+    if (saveBtn) { saveBtn.textContent = "Saving..."; saveBtn.disabled = true; }
+    var base = "https://api.github.com/repos/" + repo + "/contents/data/queue.json";
+    var headers = { "Authorization": "Bearer " + token, "Accept": "application/vnd.github+json" };
+
+    fetch(base + "?ref=" + encodeURIComponent(branch), { headers: headers, cache: "no-store" })
+      .then(function (r) {
+        if (r.status === 401) { localStorage.removeItem(TOKEN_KEY); throw new Error("That token was not accepted. Try again."); }
+        if (!r.ok) throw new Error("Could not read the queue (HTTP " + r.status + ")");
+        return r.json();
+      })
+      .then(function (meta) {
+        var data = JSON.parse(b64decode(meta.content));
+        var target = (data.items || []).filter(function (x) { return x.id === id; })[0];
+        if (!target) throw new Error("This post is no longer in the queue.");
+        target.caption = newCaption;
+        return fetch(base, {
+          method: "PUT",
+          headers: Object.assign({ "Content-Type": "application/json" }, headers),
+          body: JSON.stringify({
+            message: "Edit caption for " + id,
+            content: b64encode(JSON.stringify(data, null, 2) + "\n"),
+            sha: meta.sha, branch: branch
+          })
+        });
+      })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (e) { throw new Error(e.message || ("Save failed (HTTP " + r.status + ")")); });
+        var it = itemsCache.filter(function (x) { return x.id === id; })[0];
+        if (it) it.caption = newCaption;
+        render(itemsCache);
+      })
+      .catch(function (e) {
+        alert("Could not save: " + e.message);
+        render(itemsCache);
+      });
   }
 
   var url = "https://raw.githubusercontent.com/" + repo + "/" + branch + "/data/queue.json";
