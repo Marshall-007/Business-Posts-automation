@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Social Media Performance Report</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --text: #1f2430; --muted: #6b7280;
+    --line: #e6e8ec; --accent: #4f46e5; --ig: #d6249f; --fb: #1877f2; --ok: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+  header { text-align: center; padding: 24px 0 8px; }
+  header h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.5px; }
+  header .biz { color: var(--accent); font-weight: 700; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 14px; margin: 26px 0; }
+  .card { flex: 1 1 150px; min-width: 140px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 18px; text-align: center; }
+  .card .n { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+  .card .l { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; margin-top: 4px; }
+  .card.ig .n { color: var(--ig); } .card.fb .n { color: var(--fb); }
+  h2 { font-size: 18px; margin: 30px 0 12px; }
+  .tablewrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; }
+  table { width: 100%; border-collapse: collapse; min-width: 640px; }
+  th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .4px; }
+  tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cap { max-width: 300px; color: var(--text); }
+  .note { color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px; text-align: center; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 34px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+  .badge.ig { background: rgba(214,36,159,.12); color: var(--ig); }
+  .badge.fb { background: rgba(24,119,242,.12); color: var(--fb); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span id="biz" class="biz">Your Business</span></h1>
+    <div class="sub">Social media performance report</div>
+    <div class="sub" id="generated"></div>
+  </header>
+  <div id="content"><div class="note">Loading the latest numbers...</div></div>
+  <footer>Automated posting &amp; reporting. Numbers pulled directly from Instagram and Facebook.</footer>
+</div>
+<script>
+  function qp(name, def) {
+    var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
+    return m ? decodeURIComponent(m[1]) : def;
+  }
+  var repo = qp("repo", "Marshall-007/Business-Posts-automation");
+  var branch = qp("branch", "main");
+  var bizParam = qp("biz", "");
+  if (bizParam) document.getElementById("biz").textContent = bizParam;
+
+  function n(v) { return typeof v === "number" ? v.toLocaleString() : "-"; }
+
+  function totalCard(cls, value, label) {
+    return "<div class='card " + cls + "'><div class='n'>" + n(value) + "</div><div class='l'>" + label + "</div></div>";
+  }
+
+  function render(rep) {
+    var t = rep.totals || {}, ig = t.instagram || {}, fb = t.facebook || {};
+    if (rep.generated_at) {
+      document.getElementById("generated").textContent =
+        "As of " + new Date(rep.generated_at).toLocaleDateString(undefined,
+          { year: "numeric", month: "long", day: "numeric" });
+    }
+    var cards = totalCard("", t.posts || 0, "Posts published");
+    if (typeof ig.likes === "number") cards += totalCard("ig", ig.likes, "Instagram likes");
+    if (typeof ig.reach === "number") cards += totalCard("ig", ig.reach, "Instagram reach");
+    if (typeof fb.likes === "number") cards += totalCard("fb", fb.likes, "Facebook likes");
+    if (typeof (ig.comments || fb.comments) === "number")
+      cards += totalCard("", (ig.comments || 0) + (fb.comments || 0), "Total comments");
+
+    var items = rep.items || [];
+    var html = "<div class='cards'>" + cards + "</div>";
+    if (!items.length) {
+      html += "<div class='note'>No published posts have been measured yet. This report fills in as content goes live.</div>";
+    } else {
+      var rows = items.map(function (it) {
+        var i = it.instagram || {}, f = it.facebook || {};
+        var badges = (it.instagram ? "<span class='badge ig'>Instagram</span> " : "") +
+                     (it.facebook ? "<span class='badge fb'>Facebook</span>" : "");
+        var likes = (i.likes || 0) + (f.likes || 0);
+        var comments = (i.comments || 0) + (f.comments || 0);
+        var reach = typeof i.reach === "number" ? i.reach : null;
+        return "<tr><td>" + (it.posted_at ? new Date(it.posted_at).toLocaleDateString() : "-") + "</td>" +
+          "<td class='cap'>" + escapeHtml(it.caption || "") + "<br>" + badges + "</td>" +
+          "<td class='num'>" + (it.instagram || it.facebook ? likes.toLocaleString() : "-") + "</td>" +
+          "<td class='num'>" + (it.instagram || it.facebook ? comments.toLocaleString() : "-") + "</td>" +
+          "<td class='num'>" + (reach !== null ? reach.toLocaleString() : "-") + "</td></tr>";
+      }).join("");
+      html += "<h2>Post by post</h2><div class='tablewrap'><table><thead><tr>" +
+        "<th>Date</th><th>Post</th><th>Likes</th><th>Comments</th><th>Reach</th>" +
+        "</tr></thead><tbody>" + rows + "</tbody></table></div>";
+    }
+    document.getElementById("content").innerHTML = html;
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var url = "https://raw.githubusercontent.com/" + repo + "/" + branch + "/data/report.json";
+  fetch(url, { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("no report"); return r.json(); })
+    .then(render)
+    .catch(function () {
+      document.getElementById("content").innerHTML =
+        "<div class='note'>This report is not available yet. It is generated automatically each week once content has been published.</div>";
+    });
+</script>
+</body>
+</html>

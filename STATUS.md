@@ -55,7 +55,8 @@ and **Settings** (connection). Highlights:
 | Safety: 20 posts / 24h cap, past-date guard, retries | BUILT | tests cover all three |
 | Approval gate: a month posts only once approved | BUILT | engine + dashboard toggle + tests |
 | Failure alerting to a webhook (Slack/Discord/generic) | BUILT | queue runner + ALERT_WEBHOOK_URL + tests |
-| Test suite | GREEN | 74 tests, CI on every push |
+| Analytics report (likes/comments/reach) + client report page | BUILT | src/report.py + weekly job + Reports view + docs/report.html + tests |
+| Test suite | GREEN | 80 tests, CI on every push |
 
 
 ## LIVE right now (audit 2026-07-03)
@@ -93,6 +94,11 @@ and **Settings** (connection). Highlights:
   or any endpoint - the body carries both `text` and `content`). Best effort:
   a dead webhook never blocks or crashes a posting run. Add the secret named
   `ALERT_WEBHOOK_URL` to turn it on; leave it unset to keep alerts off.
+- **Analytics report:** a weekly job (Update analytics report) pulls likes,
+  comments and reach/shares for every published post into data/report.json.
+  The dashboard's **Reports** section shows totals and a post-by-post table;
+  `docs/report.html?repo=owner/name` is a clean, controls-free, client-facing
+  version safe to share as a link (reads the public report.json).
 
 ## How a new client is onboarded (repeatable)
 

@@ -107,6 +107,9 @@
   button.danger { background: var(--panel); border: 1px solid var(--err); color: var(--err); box-shadow: none; }
   button.danger:hover { background: var(--err); color: #fff; }
   button:disabled { opacity: .55; cursor: not-allowed; }
+  .btnlink { display: inline-flex; align-items: center; padding: 11px 18px; border-radius: 10px;
+    background: var(--accent); color: #fff; font-weight: 600; font-size: 14px; text-decoration: none; }
+  .btnlink:hover { filter: brightness(1.05); }
   .btnrow { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
   .flow {
     border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
@@ -303,6 +306,7 @@
   <a class="nav" href="#dashboard" data-view="dashboard" data-tip="Overview, activity log and the pause switch">Dashboard</a>
   <a class="nav" href="#scheduled" data-view="scheduled" data-tip="Everything waiting to publish; cancel or push out now">Scheduled Posts</a>
   <a class="nav" href="#auto" data-view="auto" data-tip="Load a month of photos and switch it on">Auto Posts</a>
+  <a class="nav" href="#reports" data-view="reports" data-tip="Likes, comments and reach for what has posted; share it with the client">Reports</a>
   <div class="navgroup">Manage</div>
   <a class="nav" href="#companies" data-view="companies" data-tip="Switch between businesses and run guided setup">Companies</a>
   <a class="nav" href="#admin" data-view="admin" data-tip="Add a new company; its repo is created for you">Admin</a>
@@ -463,6 +467,28 @@
         </div>
       </div>
       <div id="content-status" class="status"></div>
+    </section>
+  </div>
+
+  <!-- ============ REPORTS ============ -->
+  <div class="view" id="view-reports">
+    <section>
+      <h2>Reports</h2>
+      <p class="lead">How the posted content is performing - likes, comments and reach - pulled straight from Instagram and Facebook. Share the clean client-facing version with the business.</p>
+      <details class="hint"><summary>How this works</summary>
+        <ul>
+          <li>An automated weekly job (and the button below) reads every published post's live numbers into data/report.json.</li>
+          <li>The client report is a separate, branding-only page with no controls - safe to send to the business as a link.</li>
+          <li>Story numbers differ from feed numbers; whatever a platform will not give is simply left blank.</li>
+        </ul>
+      </details>
+      <div id="report-totals" class="stats"></div>
+      <div class="btnrow">
+        <button id="reload-report" class="ghost" data-tip="Re-read the latest numbers from data/report.json">Reload report</button>
+        <a id="open-client-report" class="btnlink" target="_blank" rel="noopener" data-tip="Open the shareable, client-facing report page">Open client report</a>
+      </div>
+      <div id="report-table"></div>
+      <div id="report-status" class="status"></div>
     </section>
   </div>
 
@@ -845,6 +871,7 @@ var WORKFLOW_FILE = "post.yml";
 var SCHEDULER_FILE = "scheduler.yml";
 var QUEUE_PATH = "data/queue.json";
 var ACTIVITY_PATH = "data/activity.json";
+var REPORT_PATH = "data/report.json";
 var CAMPAIGNS_PATH = "data/campaigns.json";
 var SQUARE = 1080;
 
@@ -952,10 +979,10 @@ function apiWith(token, path, options) {
 }
 
 // ---- Router (one section visible at a time) ----
-var VIEWS = ["dashboard", "companies", "scheduled", "auto", "admin", "manual", "setup", "settings"];
+var VIEWS = ["dashboard", "companies", "scheduled", "auto", "reports", "admin", "manual", "setup", "settings"];
 var VIEW_TITLES = {
   dashboard: "Dashboard", companies: "Companies", scheduled: "Scheduled Posts",
-  auto: "Auto Posts", admin: "Admin", manual: "User Manual",
+  auto: "Auto Posts", reports: "Reports", admin: "Admin", manual: "User Manual",
   setup: "Setup Instructions", settings: "Settings"
 };
 
@@ -974,6 +1001,7 @@ function route() {
   if (v === "dashboard") { refreshOverview(); }
   else if (v === "scheduled") { loadQueue(); }
   else if (v === "auto") { loadConfig().then(loadCampaigns); }
+  else if (v === "reports") { loadReport(); }
   else if (v === "companies") { renderCompanies(); }
 }
 window.addEventListener("hashchange", route);
@@ -1122,6 +1150,68 @@ function loadActivity() {
       "<p class='note'>No activity log yet. It appears after the first automated post.</p>";
   });
 }
+
+var REPORT_METRIC_LABELS = {
+  likes: "Likes", comments: "Comments", reach: "Reach", shares: "Shares"
+};
+
+function metricCards(title, metrics, order) {
+  var have = order.filter(function (k) { return typeof metrics[k] === "number"; });
+  if (!have.length) return "";
+  return have.map(function (k) {
+    return "<div class='stat'><div class='num'>" + metrics[k].toLocaleString() +
+      "</div><div class='lbl'>" + esc(title) + " " +
+      esc(REPORT_METRIC_LABELS[k] || k) + "</div></div>";
+  }).join("");
+}
+
+function loadReport() {
+  var s = settings();
+  var link = el("open-client-report");
+  if (link) link.href = "report.html?repo=" + encodeURIComponent(s.owner + "/" + s.repo) +
+    "&branch=" + encodeURIComponent(s.branch);
+  api("/repos/" + s.owner + "/" + s.repo + "/contents/" + REPORT_PATH +
+      "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
+    var rep = JSON.parse(b64decode(r.content));
+    var t = rep.totals || {};
+    var cards = "<div class='stat'><div class='num'>" + (t.posts || 0) +
+      "</div><div class='lbl'>Posts measured</div></div>" +
+      metricCards("Instagram", t.instagram || {}, ["likes", "comments", "reach"]) +
+      metricCards("Facebook", t.facebook || {}, ["likes", "comments", "shares"]);
+    el("report-totals").innerHTML = cards;
+    var items = rep.items || [];
+    if (!items.length) {
+      el("report-table").innerHTML = "<p class='note'>No measured posts yet. The report fills in after content has published and the weekly analytics job (or Reload) runs.</p>";
+    } else {
+      var rows = items.map(function (it) {
+        var ig = it.instagram || {}, fb = it.facebook || {};
+        function num(m, k) { return typeof m[k] === "number" ? m[k].toLocaleString() : "-"; }
+        return "<tr><td>" + esc(it.posted_at ? new Date(it.posted_at).toLocaleDateString() : "-") + "</td>" +
+          "<td style='max-width:260px; white-space:normal; word-break:break-word;'>" + esc(it.caption || "") + "</td>" +
+          "<td>" + esc(it.post_type || "") + "</td>" +
+          "<td>" + (it.instagram ? num(ig, "likes") : "-") + "</td>" +
+          "<td>" + (it.instagram ? num(ig, "comments") : "-") + "</td>" +
+          "<td>" + (it.instagram ? num(ig, "reach") : "-") + "</td>" +
+          "<td>" + (it.facebook ? num(fb, "likes") : "-") + "</td>" +
+          "<td>" + (it.facebook ? num(fb, "comments") : "-") + "</td>" +
+          "<td>" + (it.facebook ? num(fb, "shares") : "-") + "</td></tr>";
+      }).join("");
+      el("report-table").innerHTML =
+        "<table><thead><tr><th>Date</th><th>Caption</th><th>Type</th>" +
+        "<th>IG Likes</th><th>IG Comments</th><th>IG Reach</th>" +
+        "<th>FB Likes</th><th>FB Comments</th><th>FB Shares</th></tr></thead><tbody>" +
+        rows + "</tbody></table>";
+    }
+    var when = rep.generated_at ? new Date(rep.generated_at).toLocaleString() : "unknown";
+    status("report-status", "info", "Last updated " + when + ".");
+  }).catch(function () {
+    el("report-totals").innerHTML = "";
+    el("report-table").innerHTML = "<p class='note'>No report yet. It is created by the weekly analytics job; run it from the Actions tab (\"Update analytics report\") or wait for the schedule.</p>";
+    el("report-status").className = "status";
+  });
+}
+
+el("reload-report").onclick = loadReport;
 
 function loadRuns() {
   var s = settings();
