@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upcoming Content Preview</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --panel: #ffffff; --text: #1f2430; --muted: #6b7280;
+    --line: #e6e8ec; --accent: #4f46e5; --ig: #d6249f; --fb: #1877f2;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 32px 20px 60px; }
+  header { text-align: center; padding: 20px 0 4px; }
+  header h1 { margin: 0 0 6px; font-size: 26px; letter-spacing: -.5px; }
+  header .biz { color: var(--accent); font-weight: 700; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .day { margin: 26px 0 0; }
+  .day h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
+    border-bottom: 1px solid var(--line); padding-bottom: 8px; margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+  .post { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+  .post .thumb { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: #eef0f3; display: block; }
+  .post .body { padding: 12px 14px; }
+  .post .when { font-size: 12px; color: var(--muted); }
+  .post .cap { font-size: 13px; margin-top: 6px; max-height: 5.5em; overflow: hidden; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-right: 6px; }
+  .tag.story { background: rgba(79,70,229,.12); color: var(--accent); }
+  .tag.feed { background: rgba(22,163,74,.12); color: #16a34a; }
+  .tag.ig { background: rgba(214,36,159,.12); color: var(--ig); }
+  .tag.fb { background: rgba(24,119,242,.12); color: var(--fb); }
+  .note { color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; padding: 22px; text-align: center; margin-top: 20px; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 34px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span id="biz" class="biz">Your Business</span></h1>
+    <div class="sub">Upcoming content preview</div>
+    <div class="sub">This is what is scheduled to be published. Let us know if anything should change.</div>
+  </header>
+  <div id="content"><div class="note">Loading the upcoming schedule...</div></div>
+  <footer>Automated social media posting. Schedule shown in your local time.</footer>
+</div>
+<script>
+  function qp(name, def) {
+    var m = new RegExp("[?&]" + name + "=([^&]+)").exec(location.search);
+    return m ? decodeURIComponent(m[1]) : def;
+  }
+  var repo = qp("repo", "Marshall-007/Business-Posts-automation");
+  var branch = qp("branch", "main");
+  var bizParam = qp("biz", "");
+  if (bizParam) document.getElementById("biz").textContent = bizParam;
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function platTags(plats) {
+    plats = plats || ["instagram", "facebook"];
+    return (plats.indexOf("instagram") >= 0 ? "<span class='tag ig'>Instagram</span>" : "") +
+           (plats.indexOf("facebook") >= 0 ? "<span class='tag fb'>Facebook</span>" : "");
+  }
+
+  function render(items) {
+    var now = new Date();
+    var upcoming = items.filter(function (it) {
+      return it.status === "pending" && it.scheduled_at && new Date(it.scheduled_at) >= now;
+    }).sort(function (a, b) { return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+
+    if (!upcoming.length) {
+      document.getElementById("content").innerHTML =
+        "<div class='note'>No upcoming posts are scheduled right now. New content will appear here once it is loaded.</div>";
+      return;
+    }
+
+    var byDay = {};
+    upcoming.forEach(function (it) {
+      var d = new Date(it.scheduled_at);
+      var key = d.toDateString();
+      (byDay[key] = byDay[key] || []).push(it);
+    });
+
+    var html = "";
+    Object.keys(byDay).forEach(function (key) {
+      var label = new Date(key).toLocaleDateString(undefined,
+        { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      html += "<div class='day'><h2>" + escapeHtml(label) + "</h2><div class='grid'>";
+      byDay[key].forEach(function (it) {
+        var time = new Date(it.scheduled_at).toLocaleTimeString(undefined,
+          { hour: "numeric", minute: "2-digit" });
+        var typeTag = it.post_type === "story"
+          ? "<span class='tag story'>Story</span>" : "<span class='tag feed'>Post</span>";
+        var thumb = it.media_url
+          ? "<img class='thumb' loading='lazy' src='" + escapeHtml(it.media_url) + "' alt=''>"
+          : "<div class='thumb'></div>";
+        var cap = it.post_type === "story" ? "" :
+          "<div class='cap'>" + escapeHtml((it.caption || "").slice(0, 220)) + "</div>";
+        html += "<div class='post'>" + thumb + "<div class='body'>" +
+          "<div class='when'>" + escapeHtml(time) + "</div>" +
+          "<div style='margin:6px 0;'>" + typeTag + platTags(it.platforms) + "</div>" +
+          cap + "</div></div>";
+      });
+      html += "</div></div>";
+    });
+    document.getElementById("content").innerHTML = html;
+  }
+
+  var url = "https://raw.githubusercontent.com/" + repo + "/" + branch + "/data/queue.json";
+  fetch(url, { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error("no queue"); return r.json(); })
+    .then(function (data) { render(data.items || []); })
+    .catch(function () {
+      document.getElementById("content").innerHTML =
+        "<div class='note'>The preview is not available yet. It appears once content has been scheduled.</div>";
+    });
+</script>
+</body>
+</html>

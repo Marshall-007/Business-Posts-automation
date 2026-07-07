@@ -374,7 +374,11 @@
       <div id="company-list"></div>
       <div class="btnrow">
         <button id="add-existing" class="ghost" data-tip="Point the dashboard at a company repo you already have">Add an existing repo</button>
+        <button id="export-companies" class="ghost" data-tip="Download your company list as a backup file you can restore on another computer">Back up company list</button>
+        <button id="import-companies" class="ghost" data-tip="Restore a company list from a backup file">Restore from backup</button>
+        <input id="import-file" type="file" accept="application/json,.json" style="display:none">
       </div>
+      <p class="note">Your company list lives in this browser. Back it up to move it to another computer or keep it safe - tokens are included, so store the file privately.</p>
       <div id="companies-status" class="status"></div>
     </section>
   </div>
@@ -395,6 +399,7 @@
       <div class="btnrow">
         <button id="reload-queue" class="ghost" data-tip="Fetch the latest queue from GitHub">Reload queue</button>
         <button id="run-queue" class="ghost" data-tip="Publish anything already overdue instead of waiting for the next run">Process due posts now</button>
+        <a id="open-preview" class="btnlink" target="_blank" rel="noopener" data-tip="A clean, read-only calendar of upcoming content to share with the client for review">Open content preview</a>
       </div>
       <div id="queue-status" class="status"></div>
     </section>
@@ -1243,6 +1248,9 @@ var queueState = { items: [], sha: null };
 
 function loadQueue(silent) {
   var s = settings();
+  var pv = el("open-preview");
+  if (pv) pv.href = "preview.html?repo=" + encodeURIComponent(s.owner + "/" + s.repo) +
+    "&branch=" + encodeURIComponent(s.branch);
   if (!silent) status("queue-status", "info", "Loading queue...");
   return api("/repos/" + s.owner + "/" + s.repo + "/contents/" + QUEUE_PATH +
       "?ref=" + encodeURIComponent(s.branch)).then(function (r) {
@@ -1989,6 +1997,55 @@ el("add-existing").onclick = function () {
   list.push({ name: name, owner: owner, repo: repo, branch: branch, token: token });
   saveCompanies(list);
   renderCompanies();
+};
+
+// ---- Company list backup / restore (portable durable registry) ----
+el("export-companies").onclick = function () {
+  var payload = { type: "bpa_companies", version: 1,
+    exported_at: new Date().toISOString(), companies: companies() };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "companies-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(a.href);
+  status("companies-status", "ok", "Backed up " + companies().length + " company(ies). Store the file privately - it contains tokens.");
+};
+el("import-companies").onclick = function () { el("import-file").click(); };
+el("import-file").onchange = function () {
+  var file = this.files && this.files[0];
+  this.value = "";
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function () {
+    var incoming;
+    try {
+      var parsed = JSON.parse(reader.result);
+      incoming = Array.isArray(parsed) ? parsed : parsed.companies;
+    } catch (e) { incoming = null; }
+    if (!Array.isArray(incoming)) {
+      status("companies-status", "err", "That file is not a valid company backup.");
+      return;
+    }
+    var list = companies();
+    var key = function (c) { return (c.owner + "/" + c.repo + "/" + (c.branch || "main")).toLowerCase(); };
+    var seen = {};
+    list.forEach(function (c) { seen[key(c)] = true; });
+    var added = 0;
+    incoming.forEach(function (c) {
+      if (!c || !c.owner || !c.repo) return;
+      var k = key(c);
+      if (seen[k]) return;
+      seen[k] = true;
+      list.push({ name: c.name || (c.owner + "/" + c.repo), owner: c.owner,
+        repo: c.repo, branch: c.branch || "main", token: c.token || "" });
+      added++;
+    });
+    saveCompanies(list);
+    renderCompanies();
+    status("companies-status", "ok", "Restored " + added + " new company(ies) (duplicates skipped).");
+  };
+  reader.readAsText(file);
 };
 
 // ---- Admin: add company (creates the repo on main) ----

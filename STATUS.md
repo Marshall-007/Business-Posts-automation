@@ -56,6 +56,8 @@ and **Settings** (connection). Highlights:
 | Approval gate: a month posts only once approved | BUILT | engine + dashboard toggle + tests |
 | Failure alerting to a webhook (Slack/Discord/generic) | BUILT | queue runner + ALERT_WEBHOOK_URL + tests |
 | Analytics report (likes/comments/reach) + client report page | BUILT | src/report.py + weekly job + Reports view + docs/report.html + tests |
+| Client content preview (shareable, read-only) | BUILT | docs/preview.html + Scheduled Posts link |
+| Company list backup / restore (portable registry) | BUILT | Companies section export/import |
 | Test suite | GREEN | 80 tests, CI on every push |
 
 
@@ -79,8 +81,13 @@ and **Settings** (connection). Highlights:
 ## To do (future improvements)
 
 - [ ] LinkedIn and X (Twitter) publishers exist for text; wire them into the media queue like Facebook if ever needed.
-- [ ] Analytics: pull post performance (likes/reach) back into the dashboard.
 - [ ] Dedicated per-client branding on the dashboard (logo upload).
+- [ ] Per-campaign time zone: schedule and display in the client's IANA time
+  zone instead of the operator's browser. Touches the scheduling core, so it
+  is a deliberate follow-up rather than a quick change.
+- [ ] Server-side/hub-repo company registry: today the list is browser-local
+  with backup/restore. A true multi-device registry needs a designated hub
+  repo (a product decision on where it lives) - deferred until chosen.
 
 ## Recently added
 
@@ -99,6 +106,14 @@ and **Settings** (connection). Highlights:
   The dashboard's **Reports** section shows totals and a post-by-post table;
   `docs/report.html?repo=owner/name` is a clean, controls-free, client-facing
   version safe to share as a link (reads the public report.json).
+- **Client content preview:** `docs/preview.html?repo=owner/name` is a
+  read-only, shareable calendar of upcoming scheduled posts (thumbnails,
+  times, captions, platforms) for the client to review before it goes out.
+  Opened from Scheduled Posts via "Open content preview".
+- **Company list backup / restore:** the company registry (still browser
+  local by design) can be exported to a JSON file and restored on another
+  machine from the Companies section, so the list is portable and safe from
+  a cleared browser. Tokens are included, so the file is stored privately.
 
 ## How a new client is onboarded (repeatable)
 
