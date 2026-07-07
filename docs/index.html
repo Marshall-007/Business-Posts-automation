@@ -1488,43 +1488,40 @@ function normalizeTagList(value) {
   return out;
 }
 
-function commentRowHtml(text) {
-  return "<div class='comment-row' style='display:flex;gap:6px;margin-bottom:6px;'>" +
-    "<textarea class='mb-comment' rows='1' style='flex:1;min-height:34px;' " +
-    "placeholder='A comment to post under the post'>" + esc(text || "") + "</textarea>" +
-    "<button type='button' class='ghost rm-comment' title='Remove this comment' " +
+function captionRowHtml(text) {
+  return "<div class='caption-row' style='display:flex;gap:6px;margin-bottom:6px;'>" +
+    "<textarea class='mb-caption' rows='2' style='flex:1;min-height:44px;' " +
+    "placeholder='A caption to use for a post'>" + esc(text || "") + "</textarea>" +
+    "<button type='button' class='ghost rm-caption' title='Remove this caption' " +
     "style='padding:4px 10px;'>&times;</button></div>";
 }
 
 function contentControlsHtml(ci, mi, mcfg) {
-  var capMode = mcfg.caption_mode === "fixed" ? "fixed" : "auto";
-  var fixedCap = mcfg.fixed_caption || "";
+  var capMode = mcfg.caption_mode === "custom" ? "custom" : "auto";
   var tagsStr = Array.isArray(mcfg.custom_tags) ? mcfg.custom_tags.join(" ") : (mcfg.custom_tags || "");
-  var comments = Array.isArray(mcfg.comments) ? mcfg.comments : [];
+  var captions = Array.isArray(mcfg.custom_captions) ? mcfg.custom_captions : [];
+  if (!captions.length) captions = [""];   // start with one empty row to type into
   var d = "data-c='" + ci + "' data-m='" + mi + "'";
   return "<details class='content-controls' style='margin-top:8px;'>" +
-    "<summary>Captions, hashtags &amp; comments</summary>" +
+    "<summary>Captions &amp; hashtags</summary>" +
     "<div style='padding:8px 2px 2px;'>" +
 
-    "<label>Caption for every post in this month</label>" +
+    "<label>Caption for the posts in this month</label>" +
     "<select class='mb-capmode' " + d + " style='margin-bottom:8px;'>" +
     "<option value='auto'" + (capMode === "auto" ? " selected" : "") + ">Auto — a unique caption per post</option>" +
-    "<option value='fixed'" + (capMode === "fixed" ? " selected" : "") + ">One caption I write, used on every post</option>" +
+    "<option value='custom'" + (capMode === "custom" ? " selected" : "") + ">My own captions, rotated across posts</option>" +
     "</select>" +
-    "<div class='fixed-cap-wrap' " + d + " style='" + (capMode === "fixed" ? "" : "display:none;") + "'>" +
-    "<label>Your caption (reused on every post in this month)</label>" +
-    "<textarea class='mb-fixedcap' " + d + " rows='3' placeholder='Type the caption that every post should use...'>" +
-    esc(fixedCap) + "</textarea></div>" +
+    "<div class='captions-wrap' " + d + " style='" + (capMode === "custom" ? "" : "display:none;") + "'>" +
+    "<label>Your captions (each post uses the next one in order; the list repeats. " +
+    "Add just one to use the same caption on every post.)</label>" +
+    "<div class='captions-editor' " + d + ">" +
+    "<div class='caption-rows'>" + captions.map(captionRowHtml).join("") + "</div>" +
+    "<button type='button' class='ghost add-caption' " + d + " style='margin-top:2px;'>+ Add caption</button>" +
+    "</div></div>" +
 
     "<label style='margin-top:8px;'>Custom hashtags (added to every post, on top of the auto tags)</label>" +
     "<textarea class='mb-tags' " + d + " rows='2' " +
     "placeholder='#YourBrand #Sale #Special (spaces or commas, the # is optional)'>" + esc(tagsStr) + "</textarea>" +
-
-    "<label style='margin-top:8px;'>Comments (rotated onto posts, reused in order; leave empty for none)</label>" +
-    "<div class='comments-editor' " + d + ">" +
-    "<div class='comment-rows'>" + comments.map(commentRowHtml).join("") + "</div>" +
-    "<button type='button' class='ghost add-comment' " + d + " style='margin-top:2px;'>+ Add comment</button>" +
-    "</div>" +
 
     "</div></details>";
 }
@@ -1623,30 +1620,30 @@ function renderCampaigns() {
   wrap.querySelectorAll("[data-newday]").forEach(function (b) {
     b.onclick = function () { createNextDay(+b.getAttribute("data-newday")); };
   });
-  // Show/hide the fixed-caption box as the caption mode changes.
+  // Show/hide the captions editor as the caption mode changes.
   wrap.querySelectorAll(".mb-capmode").forEach(function (sel) {
     sel.onchange = function () {
-      var w = wrap.querySelector(".fixed-cap-wrap[data-c='" + sel.getAttribute("data-c") +
+      var w = wrap.querySelector(".captions-wrap[data-c='" + sel.getAttribute("data-c") +
         "'][data-m='" + sel.getAttribute("data-m") + "']");
-      if (w) w.style.display = sel.value === "fixed" ? "" : "none";
+      if (w) w.style.display = sel.value === "custom" ? "" : "none";
     };
   });
-  // Add / remove rotating comments.
-  wrap.querySelectorAll(".add-comment").forEach(function (b) {
+  // Add / remove rotating captions.
+  wrap.querySelectorAll(".add-caption").forEach(function (b) {
     b.onclick = function () {
-      var ed = wrap.querySelector(".comments-editor[data-c='" + b.getAttribute("data-c") +
+      var ed = wrap.querySelector(".captions-editor[data-c='" + b.getAttribute("data-c") +
         "'][data-m='" + b.getAttribute("data-m") + "']");
-      var rows = ed.querySelector(".comment-rows");
+      var rows = ed.querySelector(".caption-rows");
       var tmp = document.createElement("div");
-      tmp.innerHTML = commentRowHtml("");
+      tmp.innerHTML = captionRowHtml("");
       var row = tmp.firstChild;
       rows.appendChild(row);
-      row.querySelector(".rm-comment").onclick = function () { row.remove(); };
-      row.querySelector(".mb-comment").focus();
+      row.querySelector(".rm-caption").onclick = function () { row.remove(); };
+      row.querySelector(".mb-caption").focus();
     };
   });
-  wrap.querySelectorAll(".rm-comment").forEach(function (b) {
-    b.onclick = function () { b.closest(".comment-row").remove(); };
+  wrap.querySelectorAll(".rm-caption").forEach(function (b) {
+    b.onclick = function () { b.closest(".caption-row").remove(); };
   });
   updateBulkDatalist();
 }
@@ -1672,30 +1669,28 @@ function saveCampaign(ci) {
     if (en && !plats.length) problems.push((m.key || "Ungrouped days") + " needs at least one platform");
     if (en) anyOn = true;
 
-    // Per-month content controls: caption mode + fixed caption, custom tags,
-    // and the rotating comment list.
+    // Per-month content controls: caption mode + the operator's own rotating
+    // captions, and custom hashtags.
     var capSel = document.querySelector(".mb-capmode[data-c='" + ci + "'][data-m='" + mi + "']");
     var captionMode = capSel ? capSel.value : "auto";
-    var fixedBox = document.querySelector(".mb-fixedcap[data-c='" + ci + "'][data-m='" + mi + "']");
-    var fixedCaption = fixedBox ? fixedBox.value.trim() : "";
     var tagsBox = document.querySelector(".mb-tags[data-c='" + ci + "'][data-m='" + mi + "']");
     var customTags = normalizeTagList(tagsBox ? tagsBox.value : "");
-    var editor = document.querySelector(".comments-editor[data-c='" + ci + "'][data-m='" + mi + "']");
-    var comments = [];
+    var editor = document.querySelector(".captions-editor[data-c='" + ci + "'][data-m='" + mi + "']");
+    var customCaptions = [];
     if (editor) {
-      editor.querySelectorAll(".mb-comment").forEach(function (t) {
+      editor.querySelectorAll(".mb-caption").forEach(function (t) {
         var v = t.value.trim();
-        if (v) comments.push(v);
+        if (v) customCaptions.push(v);
       });
     }
-    if (en && captionMode === "fixed" && !fixedCaption) {
-      problems.push((m.key || "Ungrouped days") + " is set to one fixed caption but none is typed");
+    if (en && captionMode === "custom" && !customCaptions.length) {
+      problems.push((m.key || "Ungrouped days") + " is set to your own captions but none are typed");
     }
 
     batches[m.key] = {
       enabled: en, approved: approved, start_date: start, platforms: plats,
-      caption_mode: captionMode, fixed_caption: fixedCaption,
-      custom_tags: customTags, comments: comments
+      caption_mode: captionMode, custom_captions: customCaptions,
+      custom_tags: customTags
     };
   });
   if (problems.length) {

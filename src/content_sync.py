@@ -212,7 +212,9 @@ def resolve_caption(media, folder, pool: CaptionPool, config: dict) -> str:
     Precedence for the caption body:
       1. a per-file sidecar (photo1.jpg -> photo1.txt),
       2. a shared folder caption.txt,
-      3. a single fixed caption (caption_mode "fixed"), reused on every post,
+      3. the campaign's own captions (caption_mode "custom"), rotated one per
+         post in order and reused once the list runs out (a single caption ->
+         the same caption on every post),
       4. otherwise a unique randomized caption from the pool.
 
     Whatever the source, the campaign's custom_tags are appended on top (deduped,
@@ -223,10 +225,13 @@ def resolve_caption(media, folder, pool: CaptionPool, config: dict) -> str:
         base = with_tags(sidecar.read_text(encoding="utf-8"), pool.rng)
     else:
         shared = folder / "caption.txt"
+        captions = config.get("_custom_captions") or []
         if shared.is_file():
             base = with_tags(shared.read_text(encoding="utf-8"), pool.rng)
-        elif config.get("_caption_mode") == "fixed" and (config.get("_fixed_caption") or "").strip():
-            base = with_tags(config["_fixed_caption"], pool.rng)
+        elif config.get("_caption_mode") == "custom" and captions:
+            idx = config.setdefault("_caption_idx", [0])
+            base = with_tags(captions[idx[0] % len(captions)], pool.rng)
+            idx[0] += 1
         else:
             base = pool.next_caption()
     return append_tags(base, custom_tags)
@@ -274,18 +279,8 @@ def _enqueue_folder(
                   f"is over {PAST_GRACE_HOURS}h past; fix the campaign start date")
             continue
         caption = ""
-        comment = ""
         if post_type == "feed":
             caption = resolve_caption(media, folder, pool, config)
-            # Rotate one comment from the campaign's list onto each feed post,
-            # reusing the list in order. Stories can't be commented on, so they
-            # are skipped. The chosen comment is stored on the item so it shows
-            # in the preview and the queue runner can post it after publishing.
-            comments = config.get("_comments") or []
-            if comments:
-                idx = config.setdefault("_comment_idx", [0])
-                comment = comments[idx[0] % len(comments)]
-                idx[0] += 1
         item = {
             "id": f"content_{slug(campaign_name)}_{day_slug}_{post_type}_{slug(media.stem)}",
             "source": "content",
@@ -296,7 +291,6 @@ def _enqueue_folder(
             "is_video": media.suffix.lower() in VIDEO_EXTS,
             "platforms": platforms,
             "caption": caption,
-            "comment": comment,
             "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
             "status": "pending",
             "attempts": 0,
@@ -383,14 +377,15 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
                 **config,
                 "_platforms": plan_platforms,
                 # Per-campaign content controls (set in the dashboard, stored in
-                # campaigns.json). caption_mode "fixed" reuses _fixed_caption on
-                # every post; otherwise captions are auto-generated. _custom_tags
-                # are appended to every caption; _comments rotate onto feed posts.
+                # campaigns.json). caption_mode "custom" rotates the operator's
+                # own captions across posts (one caption -> the same on every
+                # post); otherwise captions are auto-generated. _custom_tags are
+                # appended to every caption.
                 "_caption_mode": (plan_settings.get("caption_mode") or "auto"),
-                "_fixed_caption": plan_settings.get("fixed_caption") or "",
+                "_custom_captions": [c for c in (plan_settings.get("custom_captions") or [])
+                                     if str(c).strip()],
                 "_custom_tags": plan_settings.get("custom_tags") or [],
-                "_comments": [c for c in (plan_settings.get("comments") or []) if str(c).strip()],
-                "_comment_idx": [0],
+                "_caption_idx": [0],
             }
             for index, day_dir in enumerate(plan_days):
                 day_date = plan_start + timedelta(days=index)
