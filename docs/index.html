@@ -2349,7 +2349,18 @@ async function seedRepoFromTemplate(c, log) {
   var base = "/repos/" + owner + "/" + repo;
 
   log("Reading the template...");
-  var tinfo = await apiWith(tok, tbase);
+  var tinfo;
+  try {
+    tinfo = await apiWith(tok, tbase);
+  } catch (e) {
+    if (e.status === 401 || /bad credentials/i.test(e.message || "")) {
+      throw new Error("Bad credentials — your GitHub token is invalid or expired. " +
+        "If you recently changed the token's permissions, GitHub generates a new " +
+        "token string. Copy the new value from github.com/settings/personal-access-tokens, " +
+        "then update it in Guided setup step 2 (GitHub token) and try again.");
+    }
+    throw e;
+  }
   var tree = await apiWith(tok, tbase + "/git/trees/" +
     encodeURIComponent(tinfo.default_branch) + "?recursive=1");
   var blobs = (tree.tree || []).filter(function (n) {
