@@ -127,22 +127,3 @@ class Instagram(Platform):
         if "error" in data:
             raise PostError(f"Instagram publish error: {data['error'].get('message')}")
         return data.get("id", "")
-
-    def post_comment(self, media_id: str, message: str) -> str:
-        """Add a comment to one of our own published posts.
-
-        Best-effort by design (the caller swallows failures): a comment that
-        can't be posted must never undo an already-published post.
-        """
-        message = (message or "").strip()
-        if not media_id or not message:
-            return ""
-        resp = requests.post(
-            f"{GRAPH}/{media_id}/comments",
-            data={"message": message, "access_token": self.creds.instagram_access_token},
-            timeout=30,
-        )
-        data = resp.json()
-        if "error" in data:
-            raise PostError(f"Instagram comment error: {data['error'].get('message')}")
-        return data.get("id", "")

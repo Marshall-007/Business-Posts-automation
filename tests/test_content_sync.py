@@ -366,13 +366,13 @@ def test_unconverted_webp_waits_for_prepare(tmp_path, ig_env, business_config):
     assert run(tmp_path, qp, business_config) == []
 
 
-def test_fixed_caption_mode_reuses_one_caption_with_custom_tags(
+def test_single_custom_caption_reused_on_every_post_with_tags(
         tmp_path, ig_env, business_config):
-    # caption_mode "fixed" posts the operator's one caption on every post, with
-    # the campaign's custom tags appended.
+    # caption_mode "custom" with one caption reuses it on every post, with the
+    # campaign's custom tags appended.
     qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
         "enabled": True, "start_date": "2026-07-10",
-        "caption_mode": "fixed", "fixed_caption": "Shop our winter sale now",
+        "caption_mode": "custom", "custom_captions": ["Shop our winter sale now"],
         "custom_tags": ["#LeshawSale", "#Winter"],
     }}}})
     write(tmp_path / "content/C/Month 1/Day 1/Post/a.jpg")
@@ -385,8 +385,27 @@ def test_fixed_caption_mode_reuses_one_caption_with_custom_tags(
         assert cap.startswith("Shop our winter sale now")
         assert "#LeshawSale" in cap and "#Winter" in cap
         assert cap.count("#") <= 30
-    # The fixed body itself is identical on every post.
+    # The one caption body is identical on every post.
     assert {c.split("\n\n")[0] for c in caps} == {"Shop our winter sale now"}
+
+
+def test_custom_captions_rotate_across_feed_posts_only(tmp_path, ig_env, business_config):
+    # Several captions rotate onto feed posts in order (repeating once
+    # exhausted); stories never take a feed caption.
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
+        "enabled": True, "start_date": "2026-07-10", "caption_mode": "custom",
+        "custom_captions": ["Caption one", "Caption two", "Caption three"],
+    }}}})
+    for n in ("a.jpg", "b.jpg", "c.jpg", "d.jpg"):
+        write(tmp_path / "content/C/Month 1/Day 1/Post" / n)
+    write(tmp_path / "content/C/Month 1/Day 1/Story/s.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    feed = [it for it in added if it["post_type"] == "feed"]
+    story = [it for it in added if it["post_type"] == "story"]
+    bodies = [it["caption"].split("\n\n")[0] for it in feed]
+    assert bodies == ["Caption one", "Caption two", "Caption three", "Caption one"]
+    assert all(it["caption"] == "" for it in story)
 
 
 def test_auto_caption_gets_custom_tags_appended(tmp_path, ig_env, business_config):
@@ -404,28 +423,13 @@ def test_auto_caption_gets_custom_tags_appended(tmp_path, ig_env, business_confi
     assert cap.count("#") <= 30
 
 
-def test_comments_rotate_across_feed_posts_only(tmp_path, ig_env, business_config):
-    # A campaign's comment list rotates onto feed posts in order (repeating once
-    # exhausted); stories never get a comment.
+def test_custom_mode_without_captions_falls_back_to_auto(tmp_path, ig_env, business_config):
+    # custom mode but an empty caption list must not crash; it falls back to the
+    # auto-generated caption.
     qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
-        "enabled": True, "start_date": "2026-07-10",
-        "comments": ["First!", "Love this", "DM us"],
-    }}}})
-    for n in ("a.jpg", "b.jpg", "c.jpg", "d.jpg"):
-        write(tmp_path / "content/C/Month 1/Day 1/Post" / n)
-    write(tmp_path / "content/C/Month 1/Day 1/Story/s.jpg")
-
-    added = run(tmp_path, qp, business_config)
-    feed = [it for it in added if it["post_type"] == "feed"]
-    story = [it for it in added if it["post_type"] == "story"]
-    assert [it["comment"] for it in feed] == ["First!", "Love this", "DM us", "First!"]
-    assert all(it["comment"] == "" for it in story)
-
-
-def test_no_comment_when_list_empty(tmp_path, ig_env, business_config):
-    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
-        "enabled": True, "start_date": "2026-07-10",
+        "enabled": True, "start_date": "2026-07-10", "caption_mode": "custom",
+        "custom_captions": [],
     }}}})
     write(tmp_path / "content/C/Month 1/Day 1/Post/a.jpg")
     added = run(tmp_path, qp, business_config)
-    assert added[0]["comment"] == ""
+    assert added[0]["caption"] and "#" in added[0]["caption"]

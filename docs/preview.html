@@ -102,14 +102,10 @@
           : "<div class='thumb'></div>";
         var cap = it.post_type === "story" ? "" :
           "<div class='cap'>" + escapeHtml((it.caption || "").slice(0, 220)) + "</div>";
-        var comment = (it.post_type !== "story" && it.comment)
-          ? "<div class='cap' style='opacity:.7;font-style:italic;margin-top:6px;'>First comment: " +
-            escapeHtml(it.comment) + "</div>"
-          : "";
         html += "<div class='post'>" + thumb + "<div class='body'>" +
           "<div class='when'>" + escapeHtml(time) + "</div>" +
           "<div style='margin:6px 0;'>" + typeTag + platTags(it.platforms) + "</div>" +
-          cap + comment + "</div></div>";
+          cap + "</div></div>";
       });
       html += "</div></div>";
     });
