@@ -83,3 +83,28 @@ def test_no_emoji_in_any_caption_material():
     text = " ".join(CAPTION_BODIES + BRAND_TAGS + NICHE_TAGS + VIRAL_TAGS +
                      [CONTACT_PHONE, CONTACT_URL])
     assert all(ord(ch) < 0x2600 for ch in text)
+
+
+def test_normalize_tags_from_string_and_list():
+    from src.captions import normalize_tags
+    # A free-typed string (spaces/commas, optional #) becomes clean #tags.
+    assert normalize_tags("sale, #Winter  promo") == ["#sale", "#Winter", "#promo"]
+    # A list is flattened and de-duplicated (case-insensitive), order preserved.
+    assert normalize_tags(["#a", "b c", "#A"]) == ["#a", "#b", "#c"]
+    assert normalize_tags("") == []
+    assert normalize_tags(None) == []
+
+
+def test_append_tags_adds_only_new_and_respects_cap():
+    from src.captions import MAX_HASHTAGS, append_tags
+    cap = append_tags("Nice #keep", ["#new", "#keep"])
+    assert cap.startswith("Nice #keep")
+    assert "#new" in cap
+    assert cap.count("#keep") == 1                 # already present, not duplicated
+    # Never exceeds Instagram's 30-hashtag ceiling.
+    full = " ".join("#t%d" % i for i in range(MAX_HASHTAGS))
+    out = append_tags(full, ["#extra"])
+    assert "#extra" not in out                     # no room left
+    assert out.count("#") == MAX_HASHTAGS
+    # No custom tags -> caption returned unchanged.
+    assert append_tags("Just words", []) == "Just words"

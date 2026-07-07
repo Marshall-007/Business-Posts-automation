@@ -42,7 +42,7 @@ from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from urllib.parse import quote
 
-from .captions import CaptionPool, with_tags
+from .captions import CaptionPool, append_tags, with_tags
 from .content_prepare import folder_kind
 from .queue_runner import QUEUE_FILE, is_paused, load_queue, save_queue
 
@@ -206,17 +206,30 @@ def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "default"
 
 
-def resolve_caption(media, folder, pool: CaptionPool) -> str:
-    """Sidecar text beats folder caption.txt beats a randomized caption.
-    User-written captions get a randomized tag block appended if they have
-    no hashtags of their own."""
+def resolve_caption(media, folder, pool: CaptionPool, config: dict) -> str:
+    """Decide a feed caption, then append the campaign's custom hashtags.
+
+    Precedence for the caption body:
+      1. a per-file sidecar (photo1.jpg -> photo1.txt),
+      2. a shared folder caption.txt,
+      3. a single fixed caption (caption_mode "fixed"), reused on every post,
+      4. otherwise a unique randomized caption from the pool.
+
+    Whatever the source, the campaign's custom_tags are appended on top (deduped,
+    capped at 30 hashtags total)."""
+    custom_tags = config.get("_custom_tags")
     sidecar = media.with_suffix(".txt")
     if sidecar.is_file():
-        return with_tags(sidecar.read_text(encoding="utf-8"), pool.rng)
-    shared = folder / "caption.txt"
-    if shared.is_file():
-        return with_tags(shared.read_text(encoding="utf-8"), pool.rng)
-    return pool.next_caption()
+        base = with_tags(sidecar.read_text(encoding="utf-8"), pool.rng)
+    else:
+        shared = folder / "caption.txt"
+        if shared.is_file():
+            base = with_tags(shared.read_text(encoding="utf-8"), pool.rng)
+        elif config.get("_caption_mode") == "fixed" and (config.get("_fixed_caption") or "").strip():
+            base = with_tags(config["_fixed_caption"], pool.rng)
+        else:
+            base = pool.next_caption()
+    return append_tags(base, custom_tags)
 
 
 def _enqueue_folder(
@@ -261,8 +274,18 @@ def _enqueue_folder(
                   f"is over {PAST_GRACE_HOURS}h past; fix the campaign start date")
             continue
         caption = ""
+        comment = ""
         if post_type == "feed":
-            caption = resolve_caption(media, folder, pool)
+            caption = resolve_caption(media, folder, pool, config)
+            # Rotate one comment from the campaign's list onto each feed post,
+            # reusing the list in order. Stories can't be commented on, so they
+            # are skipped. The chosen comment is stored on the item so it shows
+            # in the preview and the queue runner can post it after publishing.
+            comments = config.get("_comments") or []
+            if comments:
+                idx = config.setdefault("_comment_idx", [0])
+                comment = comments[idx[0] % len(comments)]
+                idx[0] += 1
         item = {
             "id": f"content_{slug(campaign_name)}_{day_slug}_{post_type}_{slug(media.stem)}",
             "source": "content",
@@ -273,6 +296,7 @@ def _enqueue_folder(
             "is_video": media.suffix.lower() in VIDEO_EXTS,
             "platforms": platforms,
             "caption": caption,
+            "comment": comment,
             "scheduled_at": scheduled_at.isoformat(timespec="seconds"),
             "status": "pending",
             "attempts": 0,
@@ -341,7 +365,7 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
                           "skipping.", file=sys.stderr)
                     continue
                 bplatforms = bcfg.get("platforms") or config.get("platforms") or ALL_PLATFORMS
-                plans.append((bdays, bstart, bplatforms))
+                plans.append((bdays, bstart, bplatforms, bcfg))
         else:
             # Legacy: one switch and start date for the whole campaign.
             if not config.get("enabled"):
@@ -352,10 +376,22 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
                 print(f"Campaign {name or '(default)'} has no valid start_date; skipping.",
                       file=sys.stderr)
                 continue
-            plans = [(day_dirs, start, config.get("platforms") or ALL_PLATFORMS)]
+            plans = [(day_dirs, start, config.get("platforms") or ALL_PLATFORMS, config)]
 
-        for plan_days, plan_start, plan_platforms in plans:
-            plan_config = {**config, "_platforms": plan_platforms}
+        for plan_days, plan_start, plan_platforms, plan_settings in plans:
+            plan_config = {
+                **config,
+                "_platforms": plan_platforms,
+                # Per-campaign content controls (set in the dashboard, stored in
+                # campaigns.json). caption_mode "fixed" reuses _fixed_caption on
+                # every post; otherwise captions are auto-generated. _custom_tags
+                # are appended to every caption; _comments rotate onto feed posts.
+                "_caption_mode": (plan_settings.get("caption_mode") or "auto"),
+                "_fixed_caption": plan_settings.get("fixed_caption") or "",
+                "_custom_tags": plan_settings.get("custom_tags") or [],
+                "_comments": [c for c in (plan_settings.get("comments") or []) if str(c).strip()],
+                "_comment_idx": [0],
+            }
             for index, day_dir in enumerate(plan_days):
                 day_date = plan_start + timedelta(days=index)
                 day_slug = slug(str(day_dir.relative_to(campaign_dir)))

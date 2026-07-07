@@ -51,6 +51,16 @@ class Facebook(Platform):
             id_key="post_id",
         )
 
+    def post_comment(self, post_id: str, message: str) -> str:
+        """Add a comment to one of our own Page posts (best-effort).
+
+        Uses the same Page token; commenting needs pages_manage_engagement,
+        which Page tokens issued for posting generally carry."""
+        message = (message or "").strip()
+        if not post_id or not message:
+            return ""
+        return self._post(f"/{post_id}/comments", {"message": message}, id_key="id")
+
     # ---- Stories -----------------------------------------------------------
 
     def _publish_story(self, media_url: str, is_video: bool) -> str:

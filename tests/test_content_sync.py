@@ -364,3 +364,68 @@ def test_unconverted_webp_waits_for_prepare(tmp_path, ig_env, business_config):
     qp = write_campaigns(tmp_path, {"C": CFG})
     write(tmp_path / "content/C/day1/posts/raw.webp")
     assert run(tmp_path, qp, business_config) == []
+
+
+def test_fixed_caption_mode_reuses_one_caption_with_custom_tags(
+        tmp_path, ig_env, business_config):
+    # caption_mode "fixed" posts the operator's one caption on every post, with
+    # the campaign's custom tags appended.
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
+        "enabled": True, "start_date": "2026-07-10",
+        "caption_mode": "fixed", "fixed_caption": "Shop our winter sale now",
+        "custom_tags": ["#LeshawSale", "#Winter"],
+    }}}})
+    write(tmp_path / "content/C/Month 1/Day 1/Post/a.jpg")
+    write(tmp_path / "content/C/Month 1/Day 2/Post/b.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    caps = [it["caption"] for it in added]
+    assert len(caps) == 2
+    for cap in caps:
+        assert cap.startswith("Shop our winter sale now")
+        assert "#LeshawSale" in cap and "#Winter" in cap
+        assert cap.count("#") <= 30
+    # The fixed body itself is identical on every post.
+    assert {c.split("\n\n")[0] for c in caps} == {"Shop our winter sale now"}
+
+
+def test_auto_caption_gets_custom_tags_appended(tmp_path, ig_env, business_config):
+    # Auto mode keeps varied captions but still appends the custom tags (given
+    # here as a free-typed string).
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
+        "enabled": True, "start_date": "2026-07-10",
+        "custom_tags": "#Leshaw #Special",
+    }}}})
+    write(tmp_path / "content/C/Month 1/Day 1/Post/a.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    cap = added[0]["caption"]
+    assert "#Leshaw" in cap and "#Special" in cap
+    assert cap.count("#") <= 30
+
+
+def test_comments_rotate_across_feed_posts_only(tmp_path, ig_env, business_config):
+    # A campaign's comment list rotates onto feed posts in order (repeating once
+    # exhausted); stories never get a comment.
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
+        "enabled": True, "start_date": "2026-07-10",
+        "comments": ["First!", "Love this", "DM us"],
+    }}}})
+    for n in ("a.jpg", "b.jpg", "c.jpg", "d.jpg"):
+        write(tmp_path / "content/C/Month 1/Day 1/Post" / n)
+    write(tmp_path / "content/C/Month 1/Day 1/Story/s.jpg")
+
+    added = run(tmp_path, qp, business_config)
+    feed = [it for it in added if it["post_type"] == "feed"]
+    story = [it for it in added if it["post_type"] == "story"]
+    assert [it["comment"] for it in feed] == ["First!", "Love this", "DM us", "First!"]
+    assert all(it["comment"] == "" for it in story)
+
+
+def test_no_comment_when_list_empty(tmp_path, ig_env, business_config):
+    qp = write_campaigns(tmp_path, {"C": {**CFG, "batches": {"Month 1": {
+        "enabled": True, "start_date": "2026-07-10",
+    }}}})
+    write(tmp_path / "content/C/Month 1/Day 1/Post/a.jpg")
+    added = run(tmp_path, qp, business_config)
+    assert added[0]["comment"] == ""

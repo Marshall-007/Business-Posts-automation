@@ -104,3 +104,27 @@ def test_is_configured_requires_creds_and_media(ig_env, monkeypatch):
     assert make_ig(image_urls=()).is_configured() is False
     monkeypatch.delenv("INSTAGRAM_ACCESS_TOKEN")
     assert make_ig().is_configured() is False
+
+
+def test_post_comment_hits_comments_edge(fake_requests):
+    cid = make_ig().post_comment("media_9", "Nice one")
+    url, params = fake_requests.posts[-1]
+    assert url.endswith("/media_9/comments")
+    assert params["message"] == "Nice one"
+    assert params["access_token"] == "IGAAtest"
+    assert cid
+
+
+def test_post_comment_skips_when_blank(fake_requests):
+    assert make_ig().post_comment("media_9", "   ") == ""
+    assert make_ig().post_comment("", "hi") == ""
+    assert fake_requests.posts == []               # no API call made
+
+
+def test_post_comment_error_raises(monkeypatch, ig_env):
+    fake = FakeRequests()
+    fake.post = lambda url, data=None, timeout=None: FakeResponse(
+        {"error": {"message": "comment blocked"}})
+    monkeypatch.setattr(ig_mod, "requests", fake)
+    with pytest.raises(PostError, match="comment blocked"):
+        make_ig().post_comment("m1", "hey")

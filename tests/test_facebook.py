@@ -143,6 +143,32 @@ def test_text_publish_hits_feed_endpoint(fb_env, monkeypatch):
     assert calls["data"]["message"] == "Hello"
 
 
+def test_post_comment_hits_comments_edge(fb_env, monkeypatch):
+    calls = {}
+
+    def fake_post(url, data=None, timeout=None):
+        calls["url"] = url
+        calls["data"] = data
+        return FakeResp({"id": "comment_1"})
+
+    monkeypatch.setattr("src.platforms.facebook.requests.post", fake_post)
+    cid = make_fb().post_comment("PAGE123_9", "Great work")
+
+    assert cid == "comment_1"
+    assert calls["url"].endswith("/PAGE123_9/comments")
+    assert calls["data"]["message"] == "Great work"
+    assert calls["data"]["access_token"] == "EAAtoken"
+
+
+def test_post_comment_skips_when_blank(fb_env, monkeypatch):
+    calls = []
+    monkeypatch.setattr("src.platforms.facebook.requests.post",
+                        lambda *a, **k: calls.append(1))
+    assert make_fb().post_comment("PAGE123_9", "  ") == ""
+    assert make_fb().post_comment("", "hi") == ""
+    assert calls == []
+
+
 def test_api_error_raises_posterror(fb_env, monkeypatch):
     def fake_post(url, data=None, timeout=None):
         return FakeResp({"error": {"message": "Invalid OAuth token"}})
