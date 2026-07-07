@@ -764,6 +764,11 @@
             <li>Set <b>Branch</b> to <code>main</code> and the folder to <code>/docs</code>, then press <b>Save</b>.</li>
             <li>Wait about a minute; the published URL appears at the top of the Pages screen (like <code>https://OWNER.github.io/REPO/</code>). That URL is this dashboard, hosted.</li>
           </ol>
+          <p><b>No <code>main</code> branch or <code>/docs</code> folder to choose?</b> The repository is
+          empty. Companies created from <b>Admin, Add Company</b> already have both. For a repository you
+          made by hand, open <b>Companies, Guided setup</b> and use the <b>Create the main branch and /docs
+          folder</b> button on the GitHub Pages step - it copies the code, workflows and dashboard onto
+          <code>main</code> so these options appear.</p>
         </div>
       </details>
 
@@ -2302,6 +2307,124 @@ function metaGet(url) {
   });
 }
 
+function wizToken(c) { return wizState(c).ghpat || c.token || settings().token; }
+
+// Is the company repo ready for GitHub Pages? Pages needs the target branch to
+// exist AND a docs/index.html on it. A brand-new, hand-made repo has neither.
+function repoReadiness(c) {
+  var tok = wizToken(c);
+  if (!tok) return Promise.reject(new Error("Complete the GitHub token step first."));
+  var base = "/repos/" + c.owner + "/" + c.repo;
+  var out = { empty: false, hasBranch: false, hasDocs: false, defaultBranch: null };
+  return apiWith(tok, base).then(function (info) {
+    out.defaultBranch = info.default_branch;
+    return apiWith(tok, base + "/branches/" + encodeURIComponent(c.branch))
+      .then(function () { out.hasBranch = true; })
+      .catch(function () { out.hasBranch = false; });
+  }).then(function () {
+    if (!out.hasBranch) return;
+    return apiWith(tok, base + "/contents/docs/index.html?ref=" + encodeURIComponent(c.branch))
+      .then(function () { out.hasDocs = true; })
+      .catch(function () { out.hasDocs = false; });
+  }).catch(function (e) {
+    // A repo with no commits returns 404 on branches/contents; treat as empty.
+    out.empty = true;
+    return out;
+  }).then(function () {
+    out.ready = out.hasBranch && out.hasDocs;
+    return out;
+  });
+}
+
+// Populate an empty (or code-less) company repo from the template: copies the
+// automation code, workflows and the dashboard (docs/) onto the target branch,
+// seeds clean data and a personalized config.yaml. Skips the heavy starter
+// content and uploads. This is what makes the main branch and /docs exist so
+// GitHub Pages can be turned on.
+async function seedRepoFromTemplate(c, log) {
+  var tok = wizToken(c);
+  if (!tok) throw new Error("Complete the GitHub token step first.");
+  var owner = c.owner, repo = c.repo, branch = c.branch || "main";
+  var tbase = "/repos/" + TEMPLATE.owner + "/" + TEMPLATE.repo;
+  var base = "/repos/" + owner + "/" + repo;
+
+  log("Reading the template...");
+  var tinfo = await apiWith(tok, tbase);
+  var tree = await apiWith(tok, tbase + "/git/trees/" +
+    encodeURIComponent(tinfo.default_branch) + "?recursive=1");
+  var blobs = (tree.tree || []).filter(function (n) {
+    if (n.type !== "blob") return false;
+    if (n.path.indexOf("content/") === 0) return false;      // skip demo content
+    if (n.path.indexOf("docs/uploads/") === 0) return false; // skip demo uploads
+    return true;
+  });
+  if (!blobs.length) throw new Error("The template has no files to copy.");
+
+  log("Copying " + blobs.length + " files into " + owner + "/" + repo + "...");
+  var items = [];
+  for (var i = 0; i < blobs.length; i++) {
+    var n = blobs[i];
+    var blob = await apiWith(tok, tbase + "/git/blobs/" + n.sha);
+    var made = await apiWith(tok, base + "/git/blobs", {
+      method: "POST",
+      body: JSON.stringify({ content: blob.content, encoding: "base64" })
+    });
+    items.push({ path: n.path, mode: n.mode, type: "blob", sha: made.sha });
+    if (i % 10 === 9) log("  " + (i + 1) + "/" + blobs.length + " files...");
+  }
+
+  // Personalize config.yaml and start every data file clean.
+  var overrides = {
+    "config.yaml": buildConfigYaml(c.name, "", "", ""),
+    "data/queue.json": JSON.stringify({ items: [] }, null, 2) + "\n",
+    "data/campaigns.json": JSON.stringify({ campaigns: {} }, null, 2) + "\n",
+    "data/history.json": JSON.stringify({ posts: [] }, null, 2) + "\n",
+    "data/activity.json": JSON.stringify({ entries: [] }, null, 2) + "\n",
+    "data/automation.json": JSON.stringify({ paused: false }, null, 2) + "\n"
+  };
+  items = items.filter(function (it) { return !(it.path in overrides); });
+  Object.keys(overrides).forEach(function (p) {
+    items.push({ path: p, mode: "100644", type: "blob", content: overrides[p] });
+  });
+
+  log("Building the commit...");
+  var newTree = await apiWith(tok, base + "/git/trees", {
+    method: "POST", body: JSON.stringify({ tree: items })
+  });
+
+  // Commit onto the branch: with a parent if it already exists, otherwise the
+  // repo's first commit, then create the branch ref.
+  var parent = null;
+  try {
+    var ref = await apiWith(tok, base + "/git/ref/heads/" + encodeURIComponent(branch));
+    parent = ref.object.sha;
+  } catch (e) { parent = null; }
+  var commit = await apiWith(tok, base + "/git/commits", {
+    method: "POST",
+    body: JSON.stringify({
+      message: "Set up " + c.name + " from the template (code, workflows, dashboard)",
+      tree: newTree.sha, parents: parent ? [parent] : []
+    })
+  });
+  if (parent) {
+    await apiWith(tok, base + "/git/refs/heads/" + encodeURIComponent(branch), {
+      method: "PATCH", body: JSON.stringify({ sha: commit.sha })
+    });
+  } else {
+    await apiWith(tok, base + "/git/refs", {
+      method: "POST",
+      body: JSON.stringify({ ref: "refs/heads/" + branch, sha: commit.sha })
+    });
+  }
+  // Make sure the branch we just wrote is the repo's default (so Pages defaults to it).
+  try {
+    await apiWith(tok, base, {
+      method: "PATCH", body: JSON.stringify({ default_branch: branch })
+    });
+  } catch (e) { /* not fatal */ }
+  log("Done. " + owner + "/" + repo + " now has the " + branch + " branch and /docs folder.");
+}
+
 function wizardSteps(c) {
   var st = wizState(c);
   return [
@@ -2492,15 +2615,86 @@ function wizardSteps(c) {
       body: function () {
         var url = "https://" + c.owner.toLowerCase() + ".github.io/" + c.repo + "/";
         return "<p>This publishes the company's own dashboard (this exact app) at a web address.</p>" +
+          "<div id='wz-prep' class='status info show'>Checking that the repository has a <b>" +
+          esc(c.branch) + "</b> branch and a <b>/docs</b> folder...</div>" +
+          "<div class='btnrow' id='wz-prep-row' style='display:none;'>" +
+          "<button id='wz-prep-btn' data-tip='Copy the code, workflows and dashboard into this repo so the branch and /docs exist'>" +
+          "Create the " + esc(c.branch) + " branch and /docs folder</button></div>" +
+          "<details style='margin:10px 0;'><summary>New, empty repository? (no " + esc(c.branch) +
+          " branch or /docs folder yet)</summary>" +
+          "<p>GitHub Pages can only publish a branch and folder that already exist. A repository you " +
+          "created by hand is empty - it has no <b>" + esc(c.branch) + "</b> branch and no <b>/docs</b> " +
+          "folder, and it has none of the posting code either, so there is nothing to publish yet.</p>" +
+          "<p><b>Easiest fix:</b> press <b>Create the " + esc(c.branch) + " branch and /docs folder</b> " +
+          "above. It copies the automation code, the scheduled workflows and the dashboard into this " +
+          "repository on the <b>" + esc(c.branch) + "</b> branch (about a minute), so everything below " +
+          "then works.</p>" +
+          "<p><b>Or do it by hand on GitHub:</b></p><ol>" +
+          "<li>Open the repository. If it is completely empty, press <b>Add file, Create new file</b>, " +
+          "type <code>docs/index.html</code> as the name (the <code>docs/</code> creates the folder), " +
+          "put any text in it, and <b>Commit</b> - GitHub makes the first commit on a <b>" +
+          esc(c.branch) + "</b> branch automatically.</li>" +
+          "<li>If a branch already exists but is not called <b>" + esc(c.branch) + "</b>: open the " +
+          "branch dropdown, type <b>" + esc(c.branch) + "</b>, and press <b>Create branch: " +
+          esc(c.branch) + "</b>. Then in <b>Settings, General</b> set it as the default branch.</li>" +
+          "<li>Note: a hand-made repo still will not post anything until it also has the code - the " +
+          "button above is the reliable path.</li></ol></details>" +
+          "<p>Then turn Pages on:</p>" +
           "<ol><li>Open <a href='https://github.com/" + esc(c.owner) + "/" + esc(c.repo) +
           "/settings/pages' target='_blank' rel='noopener'>the repository's Pages settings</a>.</li>" +
           "<li>Under <b>Build and deployment, Source</b>, choose <b>Deploy from a branch</b>.</li>" +
-          "<li>Set <b>Branch</b> to <b>" + esc(c.branch) + "</b> and the folder to <b>/docs</b>.</li>" +
-          "<li>Press <b>Save</b> and wait about one minute.</li></ol>" +
+          "<li>Set <b>Branch</b> to <b>" + esc(c.branch) + "</b> and the folder to <b>/docs</b>, then <b>Save</b>.</li>" +
+          "<li>Wait about one minute.</li></ol>" +
           "<p>The dashboard will be live at:</p>" +
           "<div class='secretrow'><span class='varname'>" + esc(url) + "</span>" +
           "<button class='copybtn' data-copyval='" + esc(url) + "'>Copy URL</button></div>" +
           "<p>Open it in a new tab to confirm it loads, then press <b>Save and Verify</b>.</p>";
+      },
+      onRender: function () {
+        var prep = el("wz-prep"), row = el("wz-prep-row"), btn = el("wz-prep-btn");
+        if (!prep) return;
+        repoReadiness(c).then(function (r) {
+          if (r.ready) {
+            prep.className = "status ok show";
+            prep.innerHTML = "Ready: the <b>" + esc(c.branch) +
+              "</b> branch and <b>/docs</b> folder both exist. Turn Pages on below.";
+            row.style.display = "none";
+          } else {
+            prep.className = "status err show";
+            prep.innerHTML = (r.empty
+              ? "This repository is empty - it has no <b>" + esc(c.branch) + "</b> branch or code yet."
+              : (!r.hasBranch
+                  ? "This repository has no <b>" + esc(c.branch) + "</b> branch yet."
+                  : "The <b>" + esc(c.branch) + "</b> branch has no <b>/docs</b> folder yet.")) +
+              " Use the button below to set it up automatically.";
+            row.style.display = "";
+          }
+        }).catch(function (e) {
+          prep.className = "status err show";
+          prep.innerHTML = "Could not check the repository: " + esc(e.message) +
+            " You can still set it up with the button below.";
+          row.style.display = "";
+        });
+        if (btn) btn.onclick = function () {
+          if (!confirm("Copy the code, workflows and dashboard into " + c.owner + "/" + c.repo +
+              " on the " + c.branch + " branch? This is safe on an empty repository.")) return;
+          btn.disabled = true;
+          prep.className = "status info show";
+          prep.textContent = "";
+          seedRepoFromTemplate(c, function (line) { appendLog("wz-prep", line); })
+            .then(function () {
+              appendLog("wz-prep", "");
+              appendLog("wz-prep", "Now open the Pages settings below, pick " + c.branch +
+                " and /docs, and Save.");
+              prep.className = "status ok show";
+              row.style.display = "none";
+            })
+            .catch(function (e) {
+              appendLog("wz-prep", "FAILED: " + e.message);
+              prep.className = "status err show";
+            })
+            .then(function () { btn.disabled = false; });
+        };
       },
       verify: function () {
         var st2 = wizState(c);
@@ -2555,6 +2749,7 @@ function renderWizard() {
   el("wz-verify").style.display = step.verify ? "" : "none";
   el("wz-next").textContent = wizard.idx === wizard.steps.length - 1 ? "Finish" : "Next";
   bindCopyButtons();
+  if (typeof step.onRender === "function") { try { step.onRender(); } catch (e) { /* non-fatal */ } }
   var st2 = wizState(c);
   st2.step = wizard.idx;
   saveWizState(c, st2);
