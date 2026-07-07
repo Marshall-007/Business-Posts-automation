@@ -126,6 +126,20 @@
   .status.ok { background: var(--ok-soft); border: 1px solid var(--ok); color: #0d7a37; }
   .status.err { background: var(--err-soft); border: 1px solid var(--err); color: #b91c1c; }
   .status.info { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); }
+  /* Pop-up toast notifications (top-right) shown on button actions. */
+  .toast-wrap { position: fixed; top: 16px; right: 16px; z-index: 9999;
+    display: flex; flex-direction: column; gap: 10px; max-width: min(360px, 92vw);
+    pointer-events: none; }
+  .toast { padding: 12px 14px 12px 16px; border-radius: 10px; font-size: 14px;
+    white-space: pre-wrap; box-shadow: var(--shadow-lg); cursor: pointer;
+    background: var(--panel); border: 1px solid var(--line); border-left-width: 4px;
+    opacity: 0; transform: translateX(24px); transition: opacity .2s ease, transform .2s ease;
+    pointer-events: auto; }
+  .toast.in { opacity: 1; transform: none; }
+  .toast.ok { background: var(--ok-soft); border-color: var(--ok); color: #0d7a37; }
+  .toast.err { background: var(--err-soft); border-color: var(--err); color: #b91c1c; }
+  .toast.info { background: var(--panel); border-color: var(--accent); color: var(--text); }
+  @media (max-width: 700px) { .toast-wrap { left: 12px; right: 12px; max-width: none; } }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
@@ -296,6 +310,7 @@
 </style>
 </head>
 <body>
+<div id="toast-wrap" class="toast-wrap" aria-live="polite"></div>
 <div class="shell">
 
 <aside id="sidenav">
@@ -953,10 +968,36 @@ function saveSettings(name) {
   localStorage.setItem("gwalava_dash", JSON.stringify(data));
 }
 
+function removeToast(t) {
+  if (t._timer) clearTimeout(t._timer);
+  t.classList.remove("in");
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 250);
+}
+
+// Pop-up notification (top-right). Repeated calls with the same key reuse one
+// toast so progress updates replace in place instead of stacking.
+function toast(kind, msg, key) {
+  var wrap = document.getElementById("toast-wrap");
+  if (!wrap) { alert(msg); return; }
+  var t = key ? wrap.querySelector("[data-key='" + key + "']") : null;
+  if (!t) {
+    t = document.createElement("div");
+    if (key) t.setAttribute("data-key", key);
+    t.onclick = function () { removeToast(t); };
+    wrap.appendChild(t);
+    requestAnimationFrame(function () { t.classList.add("in"); });
+  }
+  t.className = "toast in " + (kind || "info");
+  t.textContent = msg;
+  if (t._timer) clearTimeout(t._timer);
+  t._timer = setTimeout(function () { removeToast(t); }, kind === "err" ? 9000 : 4500);
+}
+
+// All button feedback now pops up as a toast instead of printing at the bottom
+// of the page. The id is used as the toast key so a section's progress messages
+// update one notification rather than piling up.
 function status(id, kind, msg) {
-  var s = el(id);
-  s.className = "status show " + kind;
-  s.textContent = msg;
+  toast(kind, msg, id);
 }
 
 function b64encode(str) { return btoa(unescape(encodeURIComponent(str))); }
