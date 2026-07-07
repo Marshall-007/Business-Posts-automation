@@ -67,7 +67,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -A data docs/uploads content
+          git add -A data content
+          [ -d docs/uploads ] && git add -A docs/uploads
           if ! git diff --cached --quiet; then
             git commit -m "Process Instagram queue [skip ci]"
             git pull --rebase origin "$GITHUB_REF_NAME" || true

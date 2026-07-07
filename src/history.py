@@ -12,7 +12,10 @@ def load_history() -> list[dict]:
     if not HISTORY_FILE.exists():
         return []
     try:
-        return json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+        data = json.loads(HISTORY_FILE.read_text(encoding="utf-8"))
+        if isinstance(data, dict):
+            return data.get("posts", [])
+        return data if isinstance(data, list) else []
     except (json.JSONDecodeError, OSError):
         return []
 

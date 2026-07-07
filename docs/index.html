@@ -2388,7 +2388,7 @@ async function seedRepoFromTemplate(c, log) {
     "config.yaml": buildConfigYaml(c.name, "", "", ""),
     "data/queue.json": JSON.stringify({ items: [] }, null, 2) + "\n",
     "data/campaigns.json": JSON.stringify({ campaigns: {} }, null, 2) + "\n",
-    "data/history.json": JSON.stringify({ posts: [] }, null, 2) + "\n",
+    "data/history.json": JSON.stringify([], null, 2) + "\n",
     "data/activity.json": JSON.stringify({ entries: [] }, null, 2) + "\n",
     "data/automation.json": JSON.stringify({ paused: false }, null, 2) + "\n"
   };
