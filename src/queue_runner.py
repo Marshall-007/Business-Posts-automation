@@ -26,6 +26,8 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import requests
+
 from .config import Credentials, load_business_config
 from .platforms.base import PostError
 from .platforms.facebook import Facebook
@@ -68,6 +70,32 @@ def log_activity(root: Path, entry: dict) -> None:
     del entries[ACTIVITY_LIMIT:]
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"entries": entries}, indent=2) + "\n", encoding="utf-8")
+
+
+def send_alert(failures: list[dict]) -> bool:
+    """Notify the operator when a publish fails, best effort.
+
+    If ALERT_WEBHOOK_URL is set, POST a compact JSON body that both Slack and
+    Discord accept ({"text": ..., "content": ...}). Any network/HTTP error is
+    swallowed so alerting can never block or crash a posting run. Returns True
+    only when a message was actually sent, so tests and callers can tell.
+    """
+    if not failures:
+        return False
+    url = os.environ.get("ALERT_WEBHOOK_URL", "").strip()
+    if not url:
+        return False
+    lines = [f"- {f['item']} -> {f['platform']} ({f['kind']}): {f['error']}"
+             for f in failures]
+    summary = (f"Business posts: {len(failures)} publish failure(s) at "
+               f"{datetime.now(timezone.utc).isoformat(timespec='seconds')}")
+    body = summary + "\n" + "\n".join(lines)
+    try:
+        requests.post(url, json={"text": body, "content": body}, timeout=15)
+        return True
+    except requests.RequestException as exc:  # never let alerting break a run
+        print(f"[warn] alert webhook failed: {exc}", file=sys.stderr)
+        return False
 
 
 def daily_cap() -> int:
@@ -160,6 +188,7 @@ def process_due(
     facebook = Facebook(creds, business_config)
     fb_ready = facebook.is_configured()
     changed = False
+    failures: list[dict] = []  # collected for a single alert at the end of the run
 
     for item in due:
         media_url = item.get("media_url") or item.get("image_url")
@@ -208,6 +237,9 @@ def process_due(
                 "ok": ok,
                 ("post_id" if ok else "error"): detail,
             })
+            if not ok:
+                failures.append({"item": item.get("id"), "platform": platform,
+                                 "kind": kind, "error": detail})
 
         try:
             post_id = publish_to(primary)
@@ -253,6 +285,8 @@ def process_due(
 
     if changed:
         save_queue(data, queue_path)
+    if failures:
+        send_alert(failures)
     return items
 
 

@@ -1387,6 +1387,7 @@ function renderCampaigns() {
     var monthsHtml = monthsOf(c).map(function (m, mi) {
       var mcfg = batches[m.key] || {};
       var enabled = ("enabled" in mcfg) ? !!mcfg.enabled : (!Object.keys(batches).length && !!cfg.enabled);
+      var approved = ("approved" in mcfg) ? !!mcfg.approved : true;
       var start = mcfg.start_date || (!Object.keys(batches).length ? (cfg.start_date || "") : "");
       var plats = mcfg.platforms || cfg.platforms || PLATFORMS.slice();
       var startD = start ? new Date(start + "T00:00:00") : null;
@@ -1424,13 +1425,19 @@ function renderCampaigns() {
         "<span class='mname'>" + esc(m.key || "Ungrouped days") + "</span></label>" +
         "<span class='mcount'>" + m.days.length + " day(s), " + posts + " post(s), " +
         stories + " story(ies)</span>" +
-        "<span class='pill " + (enabled ? "ok" : "run") + "'>" + (enabled ? "posting" : "off") + "</span>" +
+        "<span class='pill " + (!enabled ? "run" : (approved ? "ok" : "err")) + "'>" +
+        (!enabled ? "off" : (approved ? "posting" : "awaiting approval")) + "</span>" +
         "</div>" +
         "<div class='row' style='margin-top:8px;'>" +
         "<div><label>Start date (first day of this month batch)</label>" +
         "<input type='date' class='mb-start' data-c='" + ci + "' data-m='" + mi + "' value='" + esc(start) + "'></div>" +
         "</div>" +
         "<div class='platchecks'>" + platBoxes + "</div>" +
+        "<label class='approve-row' style='display:flex;align-items:center;gap:8px;margin-top:8px;' " +
+        "data-tip='Content is only published after you approve it. Untick to hold a month for review even while it is on.'>" +
+        "<input type='checkbox' class='mb-approve' data-c='" + ci + "' data-m='" + mi + "'" +
+        (approved ? " checked" : "") + ">" +
+        "<span>Approved to post</span></label>" +
         "<details><summary>Day-by-day plan</summary>" +
         "<table><thead><tr><th>Day</th><th>Posts on</th><th>Feed</th><th>Stories</th><th>State</th></tr></thead><tbody>" +
         rows + "</tbody></table></details>" +
@@ -1470,6 +1477,8 @@ function saveCampaign(ci) {
   months.forEach(function (m, mi) {
     var en = document.querySelector(".mb-en[data-c='" + ci + "'][data-m='" + mi + "']").checked;
     var start = document.querySelector(".mb-start[data-c='" + ci + "'][data-m='" + mi + "']").value;
+    var approveBox = document.querySelector(".mb-approve[data-c='" + ci + "'][data-m='" + mi + "']");
+    var approved = approveBox ? approveBox.checked : true;
     var plats = [];
     document.querySelectorAll(".mb-plat[data-c='" + ci + "'][data-m='" + mi + "']").forEach(function (b) {
       if (b.checked) plats.push(b.value);
@@ -1477,7 +1486,7 @@ function saveCampaign(ci) {
     if (en && !start) problems.push((m.key || "Ungrouped days") + " needs a start date");
     if (en && !plats.length) problems.push((m.key || "Ungrouped days") + " needs at least one platform");
     if (en) anyOn = true;
-    batches[m.key] = { enabled: en, start_date: start, platforms: plats };
+    batches[m.key] = { enabled: en, approved: approved, start_date: start, platforms: plats };
   });
   if (problems.length) {
     status("content-status", "err", "Fix before saving: " + problems.join("; ") + ".");

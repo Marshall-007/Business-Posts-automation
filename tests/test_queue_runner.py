@@ -316,6 +316,82 @@ def test_is_paused_defaults_to_false_when_no_file(tmp_path):
     assert qr.is_paused(tmp_path) is False
 
 
+def test_failure_alert_is_sent_when_webhook_configured(
+        tmp_path, ig_env, monkeypatch):
+    # A publish failure posts a compact message to ALERT_WEBHOOK_URL.
+    monkeypatch.setenv("ALERT_WEBHOOK_URL", "https://hooks.test/abc")
+
+    def boom(self, *a, **k):
+        raise PostError("api down")
+
+    monkeypatch.setattr(Instagram, "publish_media", boom)
+    sent = []
+    monkeypatch.setattr(qr.requests, "post",
+                        lambda url, **k: sent.append((url, k)) or None)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert len(sent) == 1
+    url, kw = sent[0]
+    assert url == "https://hooks.test/abc"
+    body = kw["json"]
+    # Slack ("text") and Discord ("content") both understood, same message.
+    assert body["text"] == body["content"]
+    assert "i1" in body["text"] and "api down" in body["text"]
+
+
+def test_no_alert_when_all_succeed(tmp_path, ig_env, fake_publish, monkeypatch):
+    monkeypatch.setenv("ALERT_WEBHOOK_URL", "https://hooks.test/abc")
+    sent = []
+    monkeypatch.setattr(qr.requests, "post", lambda url, **k: sent.append(url))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert sent == []
+
+
+def test_no_alert_without_webhook_url(tmp_path, ig_env, monkeypatch):
+    monkeypatch.delenv("ALERT_WEBHOOK_URL", raising=False)
+
+    def boom(self, *a, **k):
+        raise PostError("api down")
+
+    monkeypatch.setattr(Instagram, "publish_media", boom)
+    sent = []
+    monkeypatch.setattr(qr.requests, "post", lambda url, **k: sent.append(url))
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+
+    assert sent == []
+
+
+def test_alert_webhook_error_never_breaks_the_run(tmp_path, ig_env, monkeypatch):
+    # A dead webhook must not raise out of process_due.
+    monkeypatch.setenv("ALERT_WEBHOOK_URL", "https://hooks.test/abc")
+
+    def boom(self, *a, **k):
+        raise PostError("api down")
+
+    monkeypatch.setattr(Instagram, "publish_media", boom)
+
+    def dead_post(url, **k):
+        raise qr.requests.RequestException("connection refused")
+
+    monkeypatch.setattr(qr.requests, "post", dead_post)
+    qp = tmp_path / "data/queue.json"
+    write_queue(qp, [item(tmp_path)])
+
+    # Does not raise; the failure is still recorded on the item.
+    items = qr.process_due(now=NOW, root=tmp_path, queue_path=qp)
+    assert items[0]["attempts"] == 1
+
+
 def test_unconfigured_instagram_posts_nothing(tmp_path, monkeypatch, fake_publish):
     monkeypatch.delenv("INSTAGRAM_ACCESS_TOKEN", raising=False)
     monkeypatch.delenv("INSTAGRAM_USER_ID", raising=False)

@@ -143,6 +143,40 @@ def test_month_batches_post_independently(tmp_path, ig_env, business_config):
     assert more[0]["platforms"] == ["instagram", "facebook"]  # default
 
 
+def test_enabled_month_waits_for_approval(tmp_path, ig_env, business_config):
+    # A month can be enabled but still held for review: approved=False must not
+    # queue. Absent "approved" keeps posting (back-compat), and flipping it to
+    # True releases the content.
+    qp = write_campaigns(tmp_path, {"WC": {
+        **CFG,
+        "batches": {"Month 1": {"enabled": True, "start_date": "2026-07-10",
+                                 "approved": False}},
+    }})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+
+    assert run(tmp_path, qp, business_config) == []      # held for approval
+
+    # Approving it releases the content on the next sync.
+    write_campaigns(tmp_path, {"WC": {
+        **CFG,
+        "batches": {"Month 1": {"enabled": True, "start_date": "2026-07-10",
+                                 "approved": True}},
+    }})
+    added = run(tmp_path, qp, business_config)
+    assert [it["media_path"].split("/")[-1] for it in added] == ["a.jpg"]
+
+
+def test_month_without_approved_flag_still_posts(tmp_path, ig_env, business_config):
+    # Existing campaigns have no "approved" key; they must keep posting so the
+    # approval gate is non-breaking.
+    qp = write_campaigns(tmp_path, {"WC": {
+        **CFG, "batches": {"Month 1": {"enabled": True, "start_date": "2026-07-10"}},
+    }})
+    write(tmp_path / "content/WC/Month 1/Day 1/Post/a.jpg")
+
+    assert len(run(tmp_path, qp, business_config)) == 1
+
+
 def test_paused_automation_queues_nothing(tmp_path, ig_env, business_config):
     qp = write_campaigns(tmp_path, {"WC": {
         **CFG, "batches": {"Month 1": {"enabled": True, "start_date": "2026-07-10"}},

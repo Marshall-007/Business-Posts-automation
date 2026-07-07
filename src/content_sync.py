@@ -327,6 +327,13 @@ def sync(root=None, now=None, business_config=None, queue_path=None) -> list[dic
                 bcfg = batches.get(bkey) or {}
                 if not bcfg.get("enabled"):
                     continue
+                # Approval gate: an enabled month still waits until it is
+                # approved. Absent "approved" means approved (back-compat, so
+                # existing campaigns keep posting); only an explicit False holds.
+                if bcfg.get("approved") is False:
+                    print(f"Batch {name}/{bkey or '(root)'} is enabled but awaiting "
+                          "approval; not queuing until approved.")
+                    continue
                 try:
                     bstart = date.fromisoformat(bcfg.get("start_date", ""))
                 except ValueError:

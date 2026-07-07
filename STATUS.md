@@ -53,7 +53,9 @@ and **Settings** (connection). Highlights:
 | Mobile view | BUILT | responsive under 700px |
 | Admin portal (multi-company) | BUILT | docs/admin.html |
 | Safety: 20 posts / 24h cap, past-date guard, retries | BUILT | tests cover all three |
-| Test suite | GREEN | 65 tests, CI on every push |
+| Approval gate: a month posts only once approved | BUILT | engine + dashboard toggle + tests |
+| Failure alerting to a webhook (Slack/Discord/generic) | BUILT | queue runner + ALERT_WEBHOOK_URL + tests |
+| Test suite | GREEN | 74 tests, CI on every push |
 
 
 ## LIVE right now (audit 2026-07-03)
@@ -77,8 +79,20 @@ and **Settings** (connection). Highlights:
 
 - [ ] LinkedIn and X (Twitter) publishers exist for text; wire them into the media queue like Facebook if ever needed.
 - [ ] Analytics: pull post performance (likes/reach) back into the dashboard.
-- [ ] Approval mode: a "review before posting" switch per campaign.
 - [ ] Dedicated per-client branding on the dashboard (logo upload).
+
+## Recently added
+
+- **Approval gate:** every month batch has an "Approved to post" checkbox
+  (Auto Posts). A month can be enabled but held for review - it only queues
+  once approved. Existing campaigns (no approval flag) keep posting, so it is
+  non-breaking. Card shows "awaiting approval" while an enabled month is
+  unapproved.
+- **Failure alerting:** when any publish fails, the queue runner POSTs a
+  compact message to `ALERT_WEBHOOK_URL` (a Slack or Discord incoming webhook,
+  or any endpoint - the body carries both `text` and `content`). Best effort:
+  a dead webhook never blocks or crashes a posting run. Add the secret named
+  `ALERT_WEBHOOK_URL` to turn it on; leave it unset to keep alerts off.
 
 ## How a new client is onboarded (repeatable)
 
