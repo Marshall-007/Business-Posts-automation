@@ -20,12 +20,14 @@
   .day { margin: 26px 0 0; }
   .day h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted);
     border-bottom: 1px solid var(--line); padding-bottom: 8px; margin: 0 0 14px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
-  .post { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-  .post .thumb { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; background: #eef0f3; display: block; }
-  .post .body { padding: 12px 14px; }
-  .post .when { font-size: 12px; color: var(--muted); }
-  .post .cap { font-size: 13px; margin-top: 6px; max-height: 5.5em; overflow: hidden; }
+  .list { display: flex; flex-direction: column; gap: 12px; }
+  .post { display: flex; gap: 14px; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 14px; overflow: hidden; padding: 12px; }
+  .post .thumb { width: 92px; height: 92px; flex: 0 0 92px; object-fit: cover; background: #eef0f3;
+    display: block; border-radius: 10px; }
+  .post .body { flex: 1; min-width: 0; }
+  .post .when { font-size: 13px; font-weight: 600; }
+  .post .cap { font-size: 14px; margin-top: 6px; white-space: pre-wrap; word-break: break-word; }
   .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-right: 6px; }
   .tag.story { background: rgba(79,70,229,.12); color: var(--accent); }
   .tag.feed { background: rgba(22,163,74,.12); color: #16a34a; }
@@ -91,7 +93,7 @@
     Object.keys(byDay).forEach(function (key) {
       var label = new Date(key).toLocaleDateString(undefined,
         { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-      html += "<div class='day'><h2>" + escapeHtml(label) + "</h2><div class='grid'>";
+      html += "<div class='day'><h2>" + escapeHtml(label) + "</h2><div class='list'>";
       byDay[key].forEach(function (it) {
         var time = new Date(it.scheduled_at).toLocaleTimeString(undefined,
           { hour: "numeric", minute: "2-digit" });
@@ -100,8 +102,9 @@
         var thumb = it.media_url
           ? "<img class='thumb' loading='lazy' src='" + escapeHtml(it.media_url) + "' alt=''>"
           : "<div class='thumb'></div>";
-        var cap = it.post_type === "story" ? "" :
-          "<div class='cap'>" + escapeHtml((it.caption || "").slice(0, 220)) + "</div>";
+        var cap = it.post_type === "story"
+          ? "<div class='cap' style='color:var(--muted);'>Story (no caption)</div>"
+          : "<div class='cap'>" + escapeHtml(it.caption || "(no caption)") + "</div>";
         html += "<div class='post'>" + thumb + "<div class='body'>" +
           "<div class='when'>" + escapeHtml(time) + "</div>" +
           "<div style='margin:6px 0;'>" + typeTag + platTags(it.platforms) + "</div>" +
