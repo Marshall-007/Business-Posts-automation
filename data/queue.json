@@ -465,8 +465,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-08T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18067326218708047",
+      "ig_post_id": "18067326218708047",
+      "posted_at": "2026-07-08T10:50:25+00:00",
+      "fb_post_id": "1016644794682539"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-5_story_csm-05-stage-landhaus-kuechen-2026-2-f8f3c6986a",
