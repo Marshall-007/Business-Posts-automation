@@ -486,8 +486,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-08T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17896187151492832",
+      "ig_post_id": "17896187151492832",
+      "posted_at": "2026-07-08T14:55:29+00:00",
+      "fb_post_id": "2778137795891387"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-5_story_csm-007-regalsystem-structura405-easytouch961-garderobe-c083cd7f01",
