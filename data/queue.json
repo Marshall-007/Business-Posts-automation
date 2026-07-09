@@ -549,8 +549,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-09T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18024409250847912",
+      "ig_post_id": "18024409250847912",
+      "posted_at": "2026-07-09T11:41:29+00:00",
+      "fb_post_id": "1344013853881741"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-6_story_csm-009-more-than-kitchen-regalsystem-touch341-ankleide-926f2a2bef",
