@@ -633,8 +633,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-10T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18131340034575121",
+      "ig_post_id": "18131340034575121",
+      "posted_at": "2026-07-10T11:47:50+00:00",
+      "fb_post_id": "1544117624017250"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-7_story_csm-216-inox-g4-86d2964a94",
