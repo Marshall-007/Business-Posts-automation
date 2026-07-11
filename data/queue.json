@@ -717,8 +717,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-11T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18107761360820388",
+      "ig_post_id": "18107761360820388",
+      "posted_at": "2026-07-11T11:00:30+00:00",
+      "fb_post_id": "1307228354496852"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-8_story_csm-303-stoneart-g3-b1efb63a27",
