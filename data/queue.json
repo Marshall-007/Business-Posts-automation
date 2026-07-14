@@ -969,9 +969,13 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-14T10:00:00+00:00",
-      "status": "pending",
+      "status": "posted",
       "attempts": 1,
-      "last_error": "Instagram publish error: The requested resource does not exist"
+      "last_error": "Instagram publish error: The requested resource does not exist",
+      "post_id": "17923663947384477",
+      "ig_post_id": "17923663947384477",
+      "posted_at": "2026-07-14T11:43:36+00:00",
+      "fb_post_id": "1002674669249513"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-11_story_csm-332-touch-gallery-583b0be92c",
