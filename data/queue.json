@@ -1033,8 +1033,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-15T10:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17970650376108987",
+      "ig_post_id": "17970650376108987",
+      "posted_at": "2026-07-15T10:19:16+00:00",
+      "fb_post_id": "1391538426202985"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-12_story_csm-334-touch-g1-5bc6803051",
