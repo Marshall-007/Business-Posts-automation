@@ -1622,8 +1622,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-19T19:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17878741278501723",
+      "ig_post_id": "17878741278501723",
+      "posted_at": "2026-07-19T19:52:11+00:00",
+      "fb_post_id": "2257642515010830"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-17_feed_csm-340-touch-g2-4d7b4cff44",
