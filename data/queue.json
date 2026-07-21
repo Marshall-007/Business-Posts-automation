@@ -1790,8 +1790,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-21T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18078102119321902",
+      "ig_post_id": "18078102119321902",
+      "posted_at": "2026-07-21T15:24:45+00:00",
+      "fb_post_id": "1696900178259716"
     },
     {
       "id": "content_william-collins-ghost-1_month-1-day-18_story_csm-340-touch-g5-5b617c75cb",
@@ -2135,8 +2139,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-07-21T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18117658954808679",
+      "ig_post_id": "18117658954808679",
+      "posted_at": "2026-07-21T15:24:45+00:00",
+      "fb_post_id": "1067024205849300"
     },
     {
       "id": "content_gwalava-posts_month-1-day-2_feed_bulk-1783433647982-1-p0",
