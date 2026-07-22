@@ -1,6 +1,14 @@
 {
   "entries": [
     {
+      "at": "2026-07-22T19:09:03+00:00",
+      "item": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-aaa14845a6",
+      "platform": "instagram",
+      "kind": "story",
+      "ok": false,
+      "error": "Instagram publish error: The requested resource does not exist"
+    },
+    {
       "at": "2026-07-22T16:44:01+00:00",
       "item": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-690b464e63",
       "platform": "facebook",
