@@ -2064,8 +2064,12 @@
       ],
       "caption": "",
       "scheduled_at": "2026-07-23T19:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18153952948503036",
+      "ig_post_id": "18153952948503036",
+      "posted_at": "2026-07-23T20:01:00+00:00",
+      "fb_post_id": "2468230870352288"
     },
     {
       "id": "fbfix_feed_1783331985",
