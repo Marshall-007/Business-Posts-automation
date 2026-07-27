@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-07-20T09:50:10+00:00",
+  "generated_at": "2026-07-27T10:32:50+00:00",
   "totals": {
-    "posts": 81,
+    "posts": 125,
     "instagram": {
-      "likes": 17,
-      "comments": 5,
-      "reach": 32
+      "likes": 21,
+      "comments": 6,
+      "reach": 41
     },
     "facebook": {
       "likes": 0,
@@ -13,6 +13,718 @@
     }
   },
   "items": [
+    {
+      "id": "content_gwalava-posts_month-1-day-6_feed_bulk-1783433647982-5-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-26T14:27:03+00:00",
+      "caption": "Edge banding at 0.4mm, 1mm or 2mm. Small numbers, huge difference. Clean edges are what separate a professional build from a weekend job.\n\nM",
+      "instagram": {
+        "post_id": "18111016300779207",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122120601081359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-6_story_bulk-1783433647982-5-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-26T14:27:03+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17902204503526645",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "2400818610409601"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-6_feed_bulk-1783433647982-5-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-26T08:27:37+00:00",
+      "caption": "The difference between good and great furniture is measured in millimetres. We cut, edge and supply to exact measurements.\n\nVisit us or send",
+      "instagram": {
+        "post_id": "18103771790146211",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122120532081359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-6_story_bulk-1783433647982-5-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-26T08:27:37+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18081746210666921",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2100711537510548"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-5_feed_bulk-1783433647982-4-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-25T14:20:23+00:00",
+      "caption": "25 years in boards and fittings taught us one thing: the finish you admire is only as good as the hardware behind it.\n\nCome see the range fo",
+      "instagram": {
+        "post_id": "18413087566154021",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122120346291359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-5_story_bulk-1783433647982-4-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-25T14:20:23+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18072607553429437",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1566679361772054"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-5_feed_bulk-1783433647982-4-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-25T08:49:38+00:00",
+      "caption": "Strong boards. Clean edges. Hardware that lasts. Everything your next project needs, backed by 25 years of experience.\n\nVisit us or send us ",
+      "instagram": {
+        "post_id": "18111567964948698",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122120277771359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-5_story_bulk-1783433647982-4-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-25T08:49:38+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18202455145367248",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1060479483300227"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-4_feed_bulk-1783433647982-3-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-24T14:53:26+00:00",
+      "caption": "Gloss boards, colour boards and precision tops. Pick the finish, we make sure it arrives cut to size and edged to perfection.\n\nDM us your cu",
+      "instagram": {
+        "post_id": "18019313177906449",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122120067879359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-4_story_bulk-1783433647982-3-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-24T14:53:26+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18213457513337768",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1585336043116409"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-4_story_bulk-1783433647982-3-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-24T09:42:50+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18607033678019457",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1359178758879637"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-4_feed_bulk-1783433647982-3-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-24T07:16:45+00:00",
+      "caption": "Quality boards and fittings are not an expense, they are a saving. Build it right once and it serves you for decades.\n\nDM us your cutting li",
+      "instagram": {
+        "post_id": "18032916341831470",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119969299359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-20_story_csm-341-touch-g3-d720920413",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-23T20:01:00+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18153952948503036",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2468230870352288"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-20_story_csm-341-touch-g2-b0a1638723",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-23T17:16:59+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18065628812721896",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1032732742879206"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-3_story_bulk-1783433647982-2-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-23T15:52:56+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18460928530112891",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1077357838065494"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-20_story_csm-341-touch-g2-1001d04dec",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-23T13:47:47+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18104598779150658",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "987317634275167"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-3_feed_bulk-1783433647982-2-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-23T13:47:47+00:00",
+      "caption": "Dream kitchens are built one precise cut at a time. We handle the cutting and edge banding so your build goes together perfectly.\n\nSend us a",
+      "instagram": {
+        "post_id": "18059898377782734",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119758555359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-20_story_csm-341-touch-g1-c03bd0ab2d",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-23T11:49:03+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18109405445048987",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "4514064845536004"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-3_story_bulk-1783433647982-2-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-23T09:55:43+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17872480290689457",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1566155595027579"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-20_feed_csm-341-touch-g2-0b15b95000",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "feed",
+      "posted_at": "2026-07-23T07:17:35+00:00",
+      "caption": "Edge banding at 0.4mm, 1mm or 2mm. Small numbers, huge difference. Clean edges are what separate a professional build from a weekend job.\n\nM",
+      "instagram": {
+        "post_id": "17913811254424557",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119548441359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-3_feed_bulk-1783433647982-2-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-23T07:17:35+00:00",
+      "caption": "From a single shelf to a full kitchen fit-out, the recipe never changes: quality boards, accurate cuts, dependable fittings.\n\nMessage us for",
+      "instagram": {
+        "post_id": "18086595734555354",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119548525359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_story_csm-341-touch-g1-109c3c06fb",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-22T22:40:26+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17987368740001911",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1021928997300392"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-aaa14845a6",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-22T20:20:59+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18016354958921933",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1025108606887695"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-690b464e63",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-22T16:44:01+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18078061580693294",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1369769268630710"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_feed_csm-340-touch-gallery-6caa3b4098",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "feed",
+      "posted_at": "2026-07-22T15:02:53+00:00",
+      "caption": "Colour boards for personality. Gloss boards for shine. Precision tops for the perfect work surface. What are you building next?\n\nMessage us ",
+      "instagram": {
+        "post_id": "18607926022044025",
+        "likes": 1,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119069989359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-34cc4aaaeb",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-22T15:02:53+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18336592195269453",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1051685544211088"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-2_feed_bulk-1783433647982-1-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-22T15:02:53+00:00",
+      "caption": "Cabinets that close softly, drawers that glide, doors that line up perfectly. It all comes down to the fittings you choose.\n\nMessage us for ",
+      "instagram": {
+        "post_id": "18119039752868918",
+        "likes": 1,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122119070505359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-2_story_bulk-1783433647982-1-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-22T15:02:53+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17901581925471044",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "786656454501358"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_story_csm-340-touch-gallery-25e36ce142",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-22T11:18:49+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17999486750981491",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1298334785448893"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-19_feed_csm-340-touch-g5-fd4c0aa497",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "feed",
+      "posted_at": "2026-07-22T09:07:47+00:00",
+      "caption": "Your design, our boards. From high-gloss modern to warm woodgrain, we stock the colours and finishes that bring ideas to life.\n\nMessage us f",
+      "instagram": {
+        "post_id": "18091029521092765",
+        "likes": 2,
+        "comments": 1,
+        "reach": 2
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118982197359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-2_feed_bulk-1783433647982-1-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-22T09:07:47+00:00",
+      "caption": "Colour boards for personality. Gloss boards for shine. Precision tops for the perfect work surface. What are you building next?\n\nVisit us or",
+      "instagram": {
+        "post_id": "18124359985666338",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118982407359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-2_story_bulk-1783433647982-1-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-22T09:07:47+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18097448192344256",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1342499281416543"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-18_story_csm-340-touch-g5-5b617c75cb",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-21T18:14:05+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18421151254180188",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1960367111347871"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-18_story_csm-340-touch-g4-73339b53c4",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-21T15:24:45+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18078102119321902",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1696900178259716"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-1_story_bulk-1783433647982-0-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-21T15:24:45+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18117658954808679",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1067024205849300"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-1_feed_bulk-1783433647982-0-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-21T13:39:00+00:00",
+      "caption": "Your design, our boards. From high-gloss modern to warm woodgrain, we stock the colours and finishes that bring ideas to life.\n\nVisit us or ",
+      "instagram": {
+        "post_id": "18332178904268235",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118748413359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-18_story_csm-340-touch-g4-5cab5a4a79",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-21T11:53:03+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18446650354188172",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2169900650222390"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-1_story_bulk-1783433647982-0-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-07-21T09:59:57+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17863240836645840",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1363607229078666"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-18_feed_csm-340-touch-g3-d26d9b48e5",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "feed",
+      "posted_at": "2026-07-21T07:19:03+00:00",
+      "caption": "Soft-close hinges, smooth runners, handles that feel right in the hand. The details you touch every day deserve the best fittings.\n\nGet in t",
+      "instagram": {
+        "post_id": "17956864551170803",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118662181359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-1_feed_bulk-1783433647982-0-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-07-21T07:19:03+00:00",
+      "caption": "Furniture makers, carpenters, contractors: bring us your cutting list and walk out project-ready. Boards, tops, edging and hardware in one s",
+      "instagram": {
+        "post_id": "17882390448610802",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118662283359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-17_story_csm-340-touch-g1-63234fc1df",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-20T18:50:59+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18032651369647433",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1715979363877791"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-17_story_csm-340-touch-g1-4816f0ea2b",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-20T15:20:27+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18110720719771188",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1934916361228709"
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-17_feed_csm-340-touch-g2-857bcedd9e",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "feed",
+      "posted_at": "2026-07-20T13:03:07+00:00",
+      "caption": "Cabinets that close softly, drawers that glide, doors that line up perfectly. It all comes down to the fittings you choose.\n\nSend us a messa",
+      "instagram": {
+        "post_id": "17885993952435967",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122118474885359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_william-collins-ghost-1_month-1-day-17_story_csm-340-touch-g1-16cfb21b8d",
+      "campaign": "William Collins Ghost 1",
+      "post_type": "story",
+      "posted_at": "2026-07-20T10:49:38+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18095572688575562",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2114325006174875"
+      }
+    },
     {
       "id": "content_william-collins-ghost-1_month-1-day-17_feed_csm-340-touch-g2-4d7b4cff44",
       "campaign": "William Collins Ghost 1",
@@ -40,8 +752,7 @@
       "instagram": {
         "post_id": "17878741278501723",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "2257642515010830"
@@ -56,8 +767,7 @@
       "instagram": {
         "post_id": "18120994879699951",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "1585302553177152"
@@ -73,7 +783,7 @@
         "post_id": "17948982993230334",
         "likes": 2,
         "comments": 0,
-        "reach": 2
+        "reach": 5
       },
       "facebook": {
         "post_id": "1172085925986334_122118175311359188",
@@ -90,8 +800,7 @@
       "instagram": {
         "post_id": "17899922844476448",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "1765785561438233"
@@ -106,8 +815,7 @@
       "instagram": {
         "post_id": "18098853704245891",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "1310595274393756"
@@ -123,7 +831,7 @@
         "post_id": "18184934716397316",
         "likes": 0,
         "comments": 0,
-        "reach": 1
+        "reach": 2
       },
       "facebook": {
         "post_id": "1172085925986334_122118111537359188",
