@@ -2808,8 +2808,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-07-28T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17993716427810015",
+      "ig_post_id": "17993716427810015",
+      "posted_at": "2026-07-28T15:41:50+00:00",
+      "fb_post_id": "1523755462285630"
     },
     {
       "id": "content_gwalava-posts_month-1-day-9_feed_bulk-1783433647982-8-p0",
