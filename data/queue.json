@@ -4568,8 +4568,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-08-17T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18106944554122863",
+      "ig_post_id": "18106944554122863",
+      "posted_at": "2026-08-17T14:04:30+00:00",
+      "fb_post_id": "1769375770738859"
     },
     {
       "id": "content_gwalava-posts_month-1-day-29_feed_bulk-1783433647982-28-p0",
