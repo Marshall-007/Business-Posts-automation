@@ -5070,8 +5070,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-08-23T08:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18137323003568455",
+      "ig_post_id": "18137323003568455",
+      "posted_at": "2026-08-23T08:00:26+00:00",
+      "fb_error": "Facebook API error: This Page access token belongs to a Page that is not accessible."
     },
     {
       "id": "content_gwalava-posts_month-1-day-34_story_bulk-1783433647982-33-s1",
