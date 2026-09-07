@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-08-31T14:37:12+00:00",
+  "generated_at": "2026-09-07T13:09:13+00:00",
   "totals": {
-    "posts": 267,
+    "posts": 295,
     "instagram": {
-      "likes": 104,
-      "comments": 15,
-      "reach": 165
+      "likes": 108,
+      "comments": 16,
+      "reach": 176
     },
     "facebook": {
       "likes": 0,
@@ -13,6 +13,470 @@
     }
   },
   "items": [
+    {
+      "id": "content_gwalava-posts_month-1-day-49_feed_bulk-1783433647982-48-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-07T09:44:41+00:00",
+      "caption": "Gloss boards, colour boards and precision tops. Pick the finish, we make sure it arrives cut to size and edged to perfection.\n\nSend us a mes",
+      "instagram": {
+        "post_id": "18105118268350184",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132998251359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-49_story_bulk-1783433647982-48-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-07T09:44:41+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18087191954242345",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "2166109384332087"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-48_story_bulk-1783433647982-47-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-06T16:15:28+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18060221864786246",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "2109414386316757"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-48_feed_bulk-1783433647982-47-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-06T13:01:52+00:00",
+      "caption": "Colour boards for personality. Gloss boards for shine. Precision tops for the perfect work surface. What are you building next?\n\nSend us a m",
+      "instagram": {
+        "post_id": "18127325584688049",
+        "likes": 2,
+        "comments": 1,
+        "reach": 2
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132759739359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-48_feed_bulk-1783433647982-47-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-06T09:25:33+00:00",
+      "caption": "A great finish starts with great fittings. Durable hinges, reliable runners and top-quality handles, all under one roof.\n\nVisit us or send u",
+      "instagram": {
+        "post_id": "18130192903737199",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132714109359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-48_story_bulk-1783433647982-47-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-06T09:25:33+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17972711790128950",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "28467834472906921"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-47_feed_bulk-1783433647982-46-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-05T14:53:44+00:00",
+      "caption": "Soft-close hinges, smooth runners, handles that feel right in the hand. The details you touch every day deserve the best fittings.\n\nSend us ",
+      "instagram": {
+        "post_id": "18392025883164395",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132475891359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-47_story_bulk-1783433647982-46-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-05T14:53:44+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17935376235384403",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1865307358208894"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-47_feed_bulk-1783433647982-46-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-05T08:29:10+00:00",
+      "caption": "Quality boards and fittings are not an expense, they are a saving. Build it right once and it serves you for decades.\n\nMessage us for prices",
+      "instagram": {
+        "post_id": "17951123823037475",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132378037359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-47_story_bulk-1783433647982-46-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-05T08:29:10+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18070100969741564",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1265679415621814"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-46_feed_bulk-1783433647982-45-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-04T14:29:56+00:00",
+      "caption": "Gloss boards, colour boards and precision tops. Pick the finish, we make sure it arrives cut to size and edged to perfection.\n\nVisit our sto",
+      "instagram": {
+        "post_id": "18089240033334719",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132160309359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-46_story_bulk-1783433647982-45-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-04T14:29:56+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18085905215262724",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1055291113973292"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-46_feed_bulk-1783433647982-45-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-04T10:29:06+00:00",
+      "caption": "25 years in boards and fittings taught us one thing: the finish you admire is only as good as the hardware behind it.\n\nMessage us for prices",
+      "instagram": {
+        "post_id": "17947003062055435",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122132127009359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-46_story_bulk-1783433647982-45-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-04T10:29:06+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18130955821731475",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1098882112660783"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-45_feed_bulk-1783433647982-44-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-03T15:00:03+00:00",
+      "caption": "Furniture makers, carpenters, contractors: bring us your cutting list and walk out project-ready. Boards, tops, edging and hardware in one s",
+      "instagram": {
+        "post_id": "18022042841879102",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131889685359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-45_story_bulk-1783433647982-44-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-03T15:00:03+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18104704354919397",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1551992569469806"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-45_feed_bulk-1783433647982-44-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-03T11:12:12+00:00",
+      "caption": "Dream kitchens are built one precise cut at a time. We handle the cutting and edge banding so your build goes together perfectly.\n\nDM us you",
+      "instagram": {
+        "post_id": "18126458344730949",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131856745359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-45_story_bulk-1783433647982-44-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-03T11:12:12+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17900265120578273",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1093442220298443"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-44_feed_bulk-1783433647982-43-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-02T15:11:40+00:00",
+      "caption": "Your design, our boards. From high-gloss modern to warm woodgrain, we stock the colours and finishes that bring ideas to life.\n\nVisit us or ",
+      "instagram": {
+        "post_id": "17867606937645444",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131618077359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-44_story_bulk-1783433647982-43-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-02T15:11:40+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18106122548582193",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1077010321697609"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-44_feed_bulk-1783433647982-43-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-02T11:16:15+00:00",
+      "caption": "Edge banding at 0.4mm, 1mm or 2mm. Small numbers, huge difference. Clean edges are what separate a professional build from a weekend job.\n\nM",
+      "instagram": {
+        "post_id": "18095021141338366",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131583355359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-44_story_bulk-1783433647982-43-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-02T11:16:15+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17921555436204964",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1060952356658992"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-43_feed_bulk-1783433647982-42-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-01T15:33:29+00:00",
+      "caption": "Cabinets that close softly, drawers that glide, doors that line up perfectly. It all comes down to the fittings you choose.\n\nCome see the ra",
+      "instagram": {
+        "post_id": "18380018908226051",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131403919359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-43_story_bulk-1783433647982-42-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-01T15:33:29+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18120957742909870",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1609694974194101"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-43_feed_bulk-1783433647982-42-p0",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-09-01T11:43:10+00:00",
+      "caption": "Strong boards. Clean edges. Hardware that lasts. Everything your next project needs, backed by 25 years of experience.\n\nDM us your cutting l",
+      "instagram": {
+        "post_id": "18090082667175598",
+        "likes": 1,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131362405359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-43_story_bulk-1783433647982-42-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-01T11:43:10+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18038838104837025",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "3308300099354452"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-42_feed_bulk-1783433647982-41-p1",
+      "campaign": "Gwalava Posts",
+      "post_type": "feed",
+      "posted_at": "2026-08-31T17:28:36+00:00",
+      "caption": "The difference between good and great furniture is measured in millimetres. We cut, edge and supply to exact measurements.\n\nSend us a messag",
+      "instagram": {
+        "post_id": "18121151428919536",
+        "likes": 0,
+        "comments": 0,
+        "reach": 1
+      },
+      "facebook": {
+        "post_id": "1172085925986334_122131195809359188",
+        "likes": 0,
+        "comments": 0
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-42_story_bulk-1783433647982-41-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-08-31T17:28:36+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "17904937929519401",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1090205996870207"
+      }
+    },
     {
       "id": "content_gwalava-posts_month-1-day-42_feed_bulk-1783433647982-41-p0",
       "campaign": "Gwalava Posts",
@@ -40,8 +504,7 @@
       "instagram": {
         "post_id": "18085900898243589",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "985355604519389"
@@ -57,7 +520,7 @@
         "post_id": "18212791954357638",
         "likes": 0,
         "comments": 0,
-        "reach": 0
+        "reach": 1
       },
       "facebook": {
         "post_id": "1172085925986334_122130933525359188",
@@ -74,8 +537,7 @@
       "instagram": {
         "post_id": "17965321362171566",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "1744651396755938"
@@ -500,7 +962,7 @@
       "caption": "Gloss boards, colour boards and precision tops. Pick the finish, we make sure it arrives cut to size and edged to perfection.\n\nVisit our sto",
       "instagram": {
         "post_id": "18106164308272718",
-        "likes": 1,
+        "likes": 2,
         "comments": 1,
         "reach": 2
       },
@@ -535,7 +997,7 @@
         "post_id": "17996700563798323",
         "likes": 0,
         "comments": 0,
-        "reach": 0
+        "reach": 1
       },
       "facebook": {
         "post_id": "1172085925986334_122128958559359188",
@@ -994,7 +1456,7 @@
         "post_id": "18607375798035711",
         "likes": 0,
         "comments": 0,
-        "reach": 1
+        "reach": 2
       },
       "facebook": {
         "post_id": "1172085925986334_122126657319359188",
