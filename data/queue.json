@@ -7759,9 +7759,13 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-09-24T14:00:00+00:00",
-      "status": "pending",
+      "status": "posted",
       "attempts": 1,
-      "last_error": "Instagram publish error: The requested resource does not exist"
+      "last_error": "Instagram publish error: The requested resource does not exist",
+      "post_id": "18112912415009475",
+      "ig_post_id": "18112912415009475",
+      "posted_at": "2026-09-24T19:22:38+00:00",
+      "fb_post_id": "28367076299580450"
     },
     {
       "id": "content_gwalava-posts_month-1-day-67_story_bulk-1783433647982-66-s0",
