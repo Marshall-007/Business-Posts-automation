@@ -8046,8 +8046,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-10-01T08:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18224546422336870",
+      "ig_post_id": "18224546422336870",
+      "posted_at": "2026-10-01T14:40:57+00:00",
+      "fb_post_id": "1456869079652559"
     },
     {
       "id": "content_gwalava-posts_month-1-day-73_story_bulk-1783433647982-72-s1",
@@ -8064,8 +8068,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-10-01T14:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "18284152927292914",
+      "ig_post_id": "18284152927292914",
+      "posted_at": "2026-10-01T14:40:57+00:00",
+      "fb_post_id": "1330121539065546"
     },
     {
       "id": "content_gwalava-posts_month-1-day-74_story_bulk-1783433647982-73-s0",
