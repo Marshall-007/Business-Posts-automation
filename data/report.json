@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-09-28T14:43:13+00:00",
+  "generated_at": "2026-10-05T15:24:51+00:00",
   "totals": {
-    "posts": 365,
+    "posts": 380,
     "instagram": {
       "likes": 113,
       "comments": 24,
-      "reach": 190
+      "reach": 191
     },
     "facebook": {
       "likes": 0,
@@ -13,6 +13,234 @@
     }
   },
   "items": [
+    {
+      "id": "content_gwalava-posts_month-1-day-77_story_bulk-1783433647982-76-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-05T14:44:48+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18079919447708156",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1802686524400208"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-77_story_bulk-1783433647982-76-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-05T14:44:48+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18357387952223328",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1085333054309874"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-76_story_bulk-1783433647982-75-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-04T15:30:46+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18143030425590450",
+        "likes": 0,
+        "comments": 0,
+        "reach": 0
+      },
+      "facebook": {
+        "post_id": "1522017609970965"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-76_story_bulk-1783433647982-75-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-04T10:33:58+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18422714914152669",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1080548374818690"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-75_story_bulk-1783433647982-74-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-03T14:23:01+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18164763502484886",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1374239814699007"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-75_story_bulk-1783433647982-74-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-03T09:25:51+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18336550324261678",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2034793007170069"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-74_story_bulk-1783433647982-73-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-02T15:47:13+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18023590694863375",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1117011770791247"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-74_story_bulk-1783433647982-73-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-02T09:00:50+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18142296910607974",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1082381604693070"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-73_story_bulk-1783433647982-72-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-01T14:40:57+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18224546422336870",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1456869079652559"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-73_story_bulk-1783433647982-72-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-10-01T14:40:57+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18284152927292914",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1330121539065546"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-72_story_bulk-1783433647982-71-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-30T18:03:25+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18127670278696142",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2817626141939412"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-72_story_bulk-1783433647982-71-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-30T12:16:20+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18135755926728691",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "28488390477454088"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-71_story_bulk-1783433647982-70-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-29T16:46:33+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18112035083171247",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2325412658236186"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-71_story_bulk-1783433647982-70-s0",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-29T10:51:15+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18457123591187322",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "2301594954010714"
+      }
+    },
+    {
+      "id": "content_gwalava-posts_month-1-day-70_story_bulk-1783433647982-69-s1",
+      "campaign": "Gwalava Posts",
+      "post_type": "story",
+      "posted_at": "2026-09-28T19:34:43+00:00",
+      "caption": "",
+      "instagram": {
+        "post_id": "18095098355540688",
+        "likes": 0,
+        "comments": 0
+      },
+      "facebook": {
+        "post_id": "1772054320584265"
+      }
+    },
     {
       "id": "content_gwalava-posts_month-1-day-70_story_bulk-1783433647982-69-s0",
       "campaign": "Gwalava Posts",
@@ -22,8 +250,7 @@
       "instagram": {
         "post_id": "18133808530657164",
         "likes": 0,
-        "comments": 0,
-        "reach": 0
+        "comments": 0
       },
       "facebook": {
         "post_id": "2233836383860984"
@@ -564,7 +791,7 @@
         "post_id": "17869058385640813",
         "likes": 0,
         "comments": 0,
-        "reach": 0
+        "reach": 1
       },
       "facebook": {
         "post_id": "1172085925986334_122135151177359188",
