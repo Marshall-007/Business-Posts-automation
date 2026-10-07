@@ -1,6 +1,22 @@
 {
   "entries": [
     {
+      "at": "2026-10-07T18:21:39+00:00",
+      "item": "content_gwalava-posts_month-1-day-79_story_bulk-1783433647982-78-s1",
+      "platform": "facebook",
+      "kind": "story",
+      "ok": true,
+      "post_id": "1757592092122856"
+    },
+    {
+      "at": "2026-10-07T18:21:39+00:00",
+      "item": "content_gwalava-posts_month-1-day-79_story_bulk-1783433647982-78-s1",
+      "platform": "instagram",
+      "kind": "story",
+      "ok": true,
+      "post_id": "18152111161531554"
+    },
+    {
       "at": "2026-10-07T11:54:26+00:00",
       "item": "content_gwalava-posts_month-1-day-79_story_bulk-1783433647982-78-s0",
       "platform": "facebook",
@@ -2383,22 +2399,6 @@
       "kind": "image",
       "ok": true,
       "post_id": "17996700563798323"
-    },
-    {
-      "at": "2026-08-23T08:00:26+00:00",
-      "item": "content_gwalava-posts_month-1-day-34_story_bulk-1783433647982-33-s0",
-      "platform": "facebook",
-      "kind": "story",
-      "ok": false,
-      "error": "Facebook API error: This Page access token belongs to a Page that is not accessible."
-    },
-    {
-      "at": "2026-08-23T08:00:26+00:00",
-      "item": "content_gwalava-posts_month-1-day-34_story_bulk-1783433647982-33-s0",
-      "platform": "instagram",
-      "kind": "story",
-      "ok": true,
-      "post_id": "18137323003568455"
     }
   ]
 }
