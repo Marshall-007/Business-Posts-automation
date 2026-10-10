@@ -8442,8 +8442,12 @@
       "caption": "",
       "comment": "",
       "scheduled_at": "2026-10-10T08:00:00+00:00",
-      "status": "pending",
-      "attempts": 0
+      "status": "posted",
+      "attempts": 0,
+      "post_id": "17924756490203380",
+      "ig_post_id": "17924756490203380",
+      "posted_at": "2026-10-10T11:49:12+00:00",
+      "fb_post_id": "2180473649554642"
     },
     {
       "id": "content_gwalava-posts_month-1-day-82_story_bulk-1783433647982-81-s1",
